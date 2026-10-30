@@ -93,10 +93,114 @@ Quan sát lát cắt 2 tuần liên tục (từ `09/01/2017` đến `22/01/2017`
 
 ---
 
-## 5. Kết Luận Nghiệp Vụ & Định Hướng Cho Bước 2
+## 5. Cơ Sở Lý Thuyết Biến Đổi Chuỗi Thời Gian Sang Học Có Giám Sát
 
-* Chuỗi dữ liệu đã được làm sạch và đảm bảo tính tuần tự thời gian tuyệt đối.
-* Sự hiện diện rõ rệt của **chu kỳ ngày (24 giờ)** và **chu kỳ tuần (168 giờ)** trong đồ thị thực tế là căn cứ toán học và nghiệp vụ để tạo các biến trễ:
-  - Các bước trễ ngắn: $y_{t-1}, y_{t-2}, \dots, y_{t-6}$ (nắm bắt quán tính ngắn hạn).
-  - Bước trễ ngày: $y_{t-24}, y_{t-48}$ (nắm bắt tính mùa vụ hàng ngày).
-  - Bước trễ tuần: $y_{t-168}$ (nắm bắt tính mùa vụ theo tuần).
+### 5.1. Bản chất toán học của bài toán
+Trong bài toán chuỗi thời gian đơn biến cổ điển, ta có một dãy các quan sát theo thứ tự thời gian:
+$$y_1, y_2, y_3, \dots, y_T$$
+
+Mô hình Machine Learning (như XGBoost, Random Forest, Linear Regression) yêu cầu dữ liệu đầu vào dạng bảng có cấu trúc ma trận gồm tập đặc trưng đầu vào $X \in \mathbb{R}^{N \times p}$ và vector nhãn mục tiêu $y \in \mathbb{R}^N$.
+
+Kỹ thuật **Trượt cửa sổ thời gian (Sliding Window / Lagging)** chuyển đổi bài toán dự báo bước tiếp theo thành bài toán hồi quy có giám sát:
+$$\hat{y}_t = f(y_{t-1}, y_{t-2}, \dots, y_{t-p})$$
+
+Trong đó:
+* $y_t$ (**Biến mục tiêu / Target**): Giá trị phụ tải tại thời điểm $t$ cần dự báo.
+* $y_{t-1}, y_{t-2}, \dots, y_{t-p}$ (**Biến trễ / Lag Features**): Các giá trị thực tế đã quan sát được trong quá khứ tại các thời điểm $t-1, t-2, \dots, t-p$.
+* $p$ (**Bậc trễ / Lag Order**): Số bước thời gian quá khứ được sử dụng làm đặc trưng dự đoán.
+
+---
+
+### 5.2. Minh họa cơ chế trượt cửa sổ thời gian (Sliding Window Table)
+
+Bảng dưới đây minh họa quá trình biến đổi từ chuỗi 1 chiều sang bảng học có giám sát với $p = 3$:
+
+| Thời gian $t$ | Chuỗi gốc $y_t$ | $\text{Target } (y)$ | $\text{Feature } lag_1$ | $\text{Feature } lag_2$ | $\text{Feature } lag_3$ | Trạng thái sau `shift()` |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| $t_1$ | $12.379$ | $12.379$ | `NaN` | `NaN` | `NaN` | Bị loại bỏ |
+| $t_2$ | $11.935$ | $11.935$ | $12.379$ | `NaN` | `NaN` | Bị loại bỏ |
+| $t_3$ | $11.692$ | $11.692$ | $11.935$ | $12.379$ | `NaN` | Bị loại bỏ |
+| $t_4$ | $11.597$ | $11.597$ | $11.692$ | $11.935$ | $12.379$ | **Mẫu hợp lệ đầu tiên** |
+| $t_5$ | $11.681$ | $11.681$ | $11.597$ | $11.692$ | $11.935$ | Hợp lệ |
+| $t_6$ | $12.260$ | $12.260$ | $11.681$ | $11.597$ | $11.692$ | Hợp lệ |
+
+---
+
+## 6. Thiết Kế Bậc Trễ $p = 24$ (Chu Kỳ 1 Ngày)
+
+### 6.1. Căn cứ lựa chọn $p = 24$
+1. **Chu kỳ vật lý của lưới điện:** Kết quả phân tích EDA ở Bước 1 chứng minh phụ tải điện có tính chu kỳ ngày lặp lại rất mạnh sau mỗi 24 giờ.
+2. **Độ bao phủ thông tin:** Với $p = 24$, mô hình được cung cấp thông tin của:
+   - Các giờ liền kề gần nhất ($lag_1, lag_2$): nắm bắt xu hướng tăng/giảm tức thời và quán tính ngắn hạn.
+   - Các giờ nửa ngày trước ($lag_{12}$): nắm bắt pha đối lập ngày/đêm.
+   - Cùng thời điểm ngày hôm trước ($lag_{24}$): nắm bắt mức nền phụ tải tại đúng thời khắc đó của chu kỳ trước.
+3. **Cân đối chi phí tính toán & rủi ro đa cộng tuyến:** $p = 24$ là bậc trễ tiêu chuẩn, vừa đủ để bắt quy luật mà không làm bùng nổ số chiều đặc trưng dẫn đến overfitting.
+
+---
+
+### 6.2. Triển khai mã nguồn trong Notebook
+
+Hàm `create_lag_features` được triển khai chuẩn hóa trong [`scripts/main.ipynb`](../scripts/main.ipynb):
+
+```python
+def create_lag_features(data_series, p=24):
+    """
+    Chuyển đổi chuỗi thời gian đơn biến thành bài toán học có giám sát với p bậc trễ.
+    """
+    df_feat = pd.DataFrame({'y': data_series})
+    for i in range(1, p + 1):
+        df_feat[f'lag_{i}'] = data_series.shift(i)
+        
+    # Loại bỏ p dòng đầu tiên chứa NaN
+    df_clean = df_feat.dropna()
+    return df_clean
+
+# Thực thi tạo ma trận đặc trưng với p = 24
+p_lags = 24
+df_supervised = create_lag_features(series, p=p_lags)
+```
+
+---
+
+## 7. Xử Lý Giá Trị Khuyết Thiếu & Tính Toàn Vẹn Dữ Liệu
+
+### 7.1. Hiện tượng suy giảm mẫu do phép `shift()`
+* Khi thực hiện trượt $p$ bước, $p$ quan sát đầu tiên của chuỗi không có đủ giá trị quá khứ để điền vào các cột $lag_1 \dots lag_p$, sinh ra các giá trị `NaN`.
+* **Quy tắc xử lý:** Loại bỏ hoàn toàn các dòng `NaN` này bằng `.dropna()`.
+* **Đánh giá mức độ tổn thất:**
+  $$\text{Tỷ lệ mất mát} = \frac{p}{N} = \frac{24}{121.296} \approx 0,0198\%$$
+  Mức suy giảm dưới $0,02\%$ là không đáng kể, không làm ảnh hưởng đến tính đại diện của chuỗi dữ liệu 14 năm.
+
+### 7.2. Nguyên tắc chống rò rỉ dữ liệu (No Data Leakage)
+* Tuyệt đối không sử dụng bất kỳ thông tin nào tại thời điểm $t$ (hoặc tương lai $t+1$) để làm đặc trưng cho việc dự đoán $y_t$.
+* Mọi biến đặc trưng $lag_i$ đều thỏa mãn:
+  $$\text{Feature}_i(t) = y_{t-i} \quad \text{với } i \ge 1$$
+  Đảm bảo tính nhân quả thời gian (Causality) được tôn trọng 100%.
+
+---
+
+## 8. Kết Quả Thực Nghiệm Ma Trận Học Có Giám Sát
+
+Bảng tổng hợp đặc tính ma trận dữ liệu thu được sau Bước 2:
+
+| Thuộc tính | Giá trị định lượng | Diễn giải |
+|---|---|---|
+| **Kích thước ma trận (Shape)** | **$(121.272, 25)$** | $121.272$ dòng quan sát và $25$ cột dữ liệu. |
+| **Cột mục tiêu (Target)** | `y` ($1$ cột) | Phụ tải điện tại thời điểm $t$ ($MW$). |
+| **Cột đặc trưng (Features)** | `lag_1` $\rightarrow$ `lag_24` ($24$ cột) | Các giá trị trễ từ $1$ đến $24$ giờ trước đó ($MW$). |
+| **Số giá trị khuyết (NaN)** | **$0$** | Dữ liệu sạch hoàn hảo sau khi `dropna()`. |
+| **Dải thời gian hữu dụng** | `2004-10-02 01:00:00` $\rightarrow$ `2018-08-03 00:00:00` | Bắt đầu từ 01:00 ngày thứ hai của chuỗi quan sát. |
+
+### Dữ liệu mẫu kiểm tra:
+* **Mẫu đầu tiên (`2004-10-02 01:00:00`):**
+  - $y_t = 12.260\text{ MW}$
+  - $lag_1 (t-1 = \text{00:00}) = 13.147\text{ MW}$
+  - $lag_2 (t-2 = \text{23:00 ngày 01/10}) = 14.067\text{ MW}$
+  - $lag_{24} (t-24 = \text{01:00 ngày 01/10}) = 12.379\text{ MW}$ (khớp chính xác giá trị giờ đầu tiên của dataset).
+
+---
+
+## 9. Đúc Kết & Sẵn Sàng Cho Bước 3 (Chia $X - y$)
+
+* Quá trình biến đổi bài toán chuỗi thời gian $y_t$ thành bài toán học có giám sát đã hoàn thành mỹ mãn.
+* Ma trận dữ liệu `df_supervised` đã sẵn sàng để chuyển giao sang **Bước 3: Tách ma trận đầu vào $X$ và vector mục tiêu $y$**, làm tiền đề cho việc phân chia tập Train/Test theo trình tự thời gian ở Bước 4.
