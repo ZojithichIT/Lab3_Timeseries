@@ -50,7 +50,8 @@ Lab3_TS/
 └── docs/
     ├── README.md                                   # Trang chủ tài liệu & chỉ mục
     ├── 01_data_preparation_and_lag_features.md     # Tài liệu: Chuẩn bị dữ liệu & Kỹ thuật tạo Lag / Rolling Features
-    ├── 02_xgboost_modeling_and_evaluation.md       # Tài liệu: Huấn luyện XGBoost, Đánh giá sai số & Feature Importance
+    ├── 02_feature_matrix_and_time_split.md         # Tài liệu: Phân tách X-y & Chia Train (75%) - Val (12.5%) - Test (12.5%)
+    ├── 03_xgboost_modeling_and_evaluation.md       # Tài liệu: Huấn luyện XGBoost, Đánh giá sai số & Feature Importance
     ├── 03_advanced_tuning_and_multistep.md         # Tài liệu: TimeSeriesSplit, Tuning Hyperparameters & Multi-step
     ├── 04_model_comparisons_and_insights.md        # Tài liệu: So sánh XGBoost vs Random Forest vs Linear Regression vs ARIMA
     ├── report.md                                   # Báo cáo tổng hợp kết quả thực nghiệm hoàn chỉnh
