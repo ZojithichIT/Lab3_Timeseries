@@ -126,15 +126,20 @@ Bảng dưới đây minh họa quá trình biến đổi từ chuỗi 1 chiều
 
 ---
 
-## 6. Thiết Kế Bậc Trễ $p = 24$ (Chu Kỳ 1 Ngày)
+## 6. Thiết Kế Bộ Đặc Trưng Đa Chu Kỳ (24h Gần Nhất + 2-3 Ngày Trước + Chu Kỳ Tuần 7 Ngày)
 
-### 6.1. Căn cứ lựa chọn $p = 24$
-1. **Chu kỳ vật lý của lưới điện:** Kết quả phân tích EDA ở Bước 1 chứng minh phụ tải điện có tính chu kỳ ngày lặp lại rất mạnh sau mỗi 24 giờ.
-2. **Độ bao phủ thông tin:** Với $p = 24$, mô hình được cung cấp thông tin của:
-   - Các giờ liền kề gần nhất ($lag_1, lag_2$): nắm bắt xu hướng tăng/giảm tức thời và quán tính ngắn hạn.
+### 6.1. Căn cứ lựa chọn bộ đặc trưng đa chu kỳ (29 đặc trưng trễ)
+Thay vì chỉ lấy cố định 24 bậc trễ của ngày hôm trước, thiết kế đa chu kỳ khai thác tối đa cấu trúc vật lý của phụ tải lưới điện:
+1. **Nhóm 1 - Quán tính ngắn hạn & Chu kỳ ngày ($lag_1 \rightarrow lag_{24}$ - 24 đặc trưng):**
+   - Các giờ liền kề gần nhất ($lag_1, lag_2$): nắm bắt xu hướng tăng/giảm tức thời và quán tính cục bộ.
    - Các giờ nửa ngày trước ($lag_{12}$): nắm bắt pha đối lập ngày/đêm.
-   - Cùng thời điểm ngày hôm trước ($lag_{24}$): nắm bắt mức nền phụ tải tại đúng thời khắc đó của chu kỳ trước.
-3. **Cân đối chi phí tính toán & rủi ro đa cộng tuyến:** $p = 24$ là bậc trễ tiêu chuẩn, vừa đủ để bắt quy luật mà không làm bùng nổ số chiều đặc trưng dẫn đến overfitting.
+   - Cùng thời điểm ngày hôm trước ($lag_{24}$): nắm bắt mức nền phụ tải tại đúng thời khắc đó của chu kỳ ngày trước (PACF = $-0.4873$).
+2. **Nhóm 2 - Các mốc ngày trước ($lag_{48}, lag_{72}$ - 2 đặc trưng):**
+   - Cùng giờ của 2 ngày và 3 ngày trước, bổ trợ thông tin về nhịp điệu giữa tuần.
+3. **Nhóm 3 - Cụm chu kỳ tuần 7 ngày ($lag_{167}, lag_{168}, lag_{169}$ - 3 đặc trưng):**
+   - $168\text{ giờ} = 7\text{ ngày} \times 24\text{ giờ}$: Cùng giờ tuần trước kết hợp cửa sổ $\pm 1$ giờ lân cận.
+   - Đây là chu kỳ vật lý cực mạnh của lưới điện (ACF = $0.7595$, PACF = $-0.1992$, nằm trong Top 15 lag mạnh nhất toàn chuỗi).
+   - Giải quyết triệt để sự chênh lệch phụ tải giữa ngày làm việc (Thứ Hai – Thứ Sáu) và ngày nghỉ cuối tuần (Thứ Bảy, Chủ Nhật), loại bỏ điểm mù khi dự báo chuyển tiếp từ Chủ Nhật sang Thứ Hai.
 
 ---
 
@@ -143,21 +148,34 @@ Bảng dưới đây minh họa quá trình biến đổi từ chuỗi 1 chiều
 Hàm `create_lag_features` được triển khai chuẩn hóa trong [`scripts/main.ipynb`](../scripts/main.ipynb):
 
 ```python
-def create_lag_features(data_series, p=24):
+def create_lag_features(data_series):
     """
-    Chuyển đổi chuỗi thời gian đơn biến thành bài toán học có giám sát với p bậc trễ.
+    Chuyển đổi chuỗi thời gian đơn biến thành bài toán học có giám sát với:
+    - 24 giờ gần nhất: lag_1 -> lag_24 (Quán tính ngắn hạn & Chu kỳ ngày)
+    - 2 ngày & 3 ngày trước: lag_48, lag_72 (Mốc tham chiếu giữa tuần)
+    - Cụm chu kỳ tuần 7 ngày: lag_167, lag_168, lag_169 (Chu kỳ tuần 168h +- 1h)
     """
     df_feat = pd.DataFrame({'y': data_series})
-    for i in range(1, p + 1):
+    
+    # 1. Nhóm quán tính ngắn hạn & chu kỳ 24 giờ
+    for i in range(1, 25):
         df_feat[f'lag_{i}'] = data_series.shift(i)
         
-    # Loại bỏ p dòng đầu tiên chứa NaN
+    # 2. Nhóm mốc 2 ngày và 3 ngày trước
+    df_feat['lag_48'] = data_series.shift(48)
+    df_feat['lag_72'] = data_series.shift(72)
+    
+    # 3. Nhóm cụm chu kỳ tuần 7 ngày (168 giờ +- 1 giờ)
+    df_feat['lag_167'] = data_series.shift(167)
+    df_feat['lag_168'] = data_series.shift(168)
+    df_feat['lag_169'] = data_series.shift(169)
+        
+    # Loại bỏ các dòng đầu chứa NaN (tối đa 169 dòng do lag_169)
     df_clean = df_feat.dropna()
     return df_clean
 
-# Thực thi tạo ma trận đặc trưng với p = 24
-p_lags = 24
-df_supervised = create_lag_features(series, p=p_lags)
+# Thực thi tạo ma trận đặc trưng
+df_supervised = create_lag_features(series)
 ```
 
 ---
@@ -165,11 +183,11 @@ df_supervised = create_lag_features(series, p=p_lags)
 ## 7. Xử Lý Giá Trị Khuyết Thiếu & Tính Toàn Vẹn Dữ Liệu
 
 ### 7.1. Hiện tượng suy giảm mẫu do phép `shift()`
-* Khi thực hiện trượt $p$ bước, $p$ quan sát đầu tiên của chuỗi không có đủ giá trị quá khứ để điền vào các cột $lag_1 \dots lag_p$, sinh ra các giá trị `NaN`.
+* Khi thực hiện trượt bậc trễ lớn nhất ($lag_{169}$), $169$ quan sát đầu tiên của chuỗi không có đủ giá trị quá khứ để điền vào các cột trễ, sinh ra các giá trị `NaN`.
 * **Quy tắc xử lý:** Loại bỏ hoàn toàn các dòng `NaN` này bằng `.dropna()`.
 * **Đánh giá mức độ tổn thất:**
-  $$\text{Tỷ lệ mất mát} = \frac{p}{N} = \frac{24}{121.296} \approx 0,0198\%$$
-  Mức suy giảm dưới $0,02\%$ là không đáng kể, không làm ảnh hưởng đến tính đại diện của chuỗi dữ liệu 14 năm.
+  $$\text{Tỷ lệ mất mát} = \frac{169}{N} = \frac{169}{121.296} \approx 0,139\%$$
+  Mức suy giảm chỉ $\approx 0,14\%$ là cực kỳ nhỏ, bảo toàn hơn $99,86\%$ chuỗi dữ liệu 14 năm.
 
 ### 7.2. Nguyên tắc chống rò rỉ dữ liệu (No Data Leakage)
 * Tuyệt đối không sử dụng bất kỳ thông tin nào tại thời điểm $t$ (hoặc tương lai $t+1$) để làm đặc trưng cho việc dự đoán $y_t$.
@@ -185,18 +203,21 @@ Bảng tổng hợp đặc tính ma trận dữ liệu thu được sau Bước 
 
 | Thuộc tính | Giá trị định lượng | Diễn giải |
 |---|---|---|
-| **Kích thước ma trận (Shape)** | **$(121.272, 25)$** | $121.272$ dòng quan sát và $25$ cột dữ liệu. |
+| **Kích thước ma trận (Shape)** | **$(121.127, 30)$** | $121.127$ dòng quan sát và $30$ cột dữ liệu. |
 | **Cột mục tiêu (Target)** | `y` ($1$ cột) | Phụ tải điện tại thời điểm $t$ ($MW$). |
-| **Cột đặc trưng (Features)** | `lag_1` $\rightarrow$ `lag_24` ($24$ cột) | Các giá trị trễ từ $1$ đến $24$ giờ trước đó ($MW$). |
+| **Cột đặc trưng (Features)** | $29$ cột (`lag_1 \dots lag_{24}`, `lag_48`, `lag_72`, `lag_{167 \dots 169}`) | Các giá trị trễ 24h, mốc 2-3 ngày và tuần trước ($MW$). |
 | **Số giá trị khuyết (NaN)** | **$0$** | Dữ liệu sạch hoàn hảo sau khi `dropna()`. |
-| **Dải thời gian hữu dụng** | `2004-10-02 01:00:00` $\rightarrow$ `2018-08-03 00:00:00` | Bắt đầu từ 01:00 ngày thứ hai của chuỗi quan sát. |
+| **Dải thời gian hữu dụng** | `2004-10-08 02:00:00` $\rightarrow$ `2018-08-03 00:00:00` | Bắt đầu từ 02:00 ngày thứ 8 của chuỗi quan sát. |
 
 ### Dữ liệu mẫu kiểm tra:
-* **Mẫu đầu tiên (`2004-10-02 01:00:00`):**
-  - $y_t = 12.260\text{ MW}$
-  - $lag_1 (t-1 = \text{00:00}) = 13.147\text{ MW}$
-  - $lag_2 (t-2 = \text{23:00 ngày 01/10}) = 14.067\text{ MW}$
-  - $lag_{24} (t-24 = \text{01:00 ngày 01/10}) = 12.379\text{ MW}$ (khớp chính xác giá trị giờ đầu tiên của dataset).
+* **Mẫu đầu tiên (`2004-10-08 02:00:00`):**
+  - $y_t = 12.016\text{ MW}$
+  - $lag_1 (t-1 = \text{01:00}) = 12.502\text{ MW}$
+  - $lag_{24} (t-24 = \text{02:00 ngày 07/10}) = 12.083\text{ MW}$
+  - $lag_{48} (t-48 = \text{02:00 ngày 06/10}) = 12.001\text{ MW}$
+  - $lag_{72} (t-72 = \text{02:00 ngày 05/10}) = 12.099\text{ MW}$
+  - $lag_{168} (t-168 = \text{02:00 ngày 01/10}) = 11.935\text{ MW}$
+  - $lag_{169} (t-169 = \text{01:00 ngày 01/10}) = 12.379\text{ MW}$ (khớp chính xác giá trị giờ đầu tiên của dataset thô).
 
 ---
 
