@@ -81,7 +81,25 @@ Biểu đồ trực quan hóa 3 tập dữ liệu được tự động tạo v�
 
 ---
 
-## 5. Đúc Kết & Sẵn Sàng Cho Bước 5 (Huấn Luyện XGBoost)
+## 5. Danh Mục Dữ Liệu Đã Lưu Vào data/processed/
+
+Toàn bộ các tập dữ liệu phân chia đã được xuất và lưu trữ trong thư mục [data/processed/](../data/processed):
+
+| Tên File | Loại Dữ Liệu | Số Dòng | Số Cột | Kích Thước | Mô Tả Chi Tiết |
+|---|---|:---:|:---:|:---:|---|
+| [ep_train.csv](../data/processed/aep_train.csv) | Bảng hoàn chỉnh (Train) | .954$ | $ | $pprox 20,1	ext{ MB}$ | Chứa DatetimeIndex, Target $ và  \dots lag_{24}$ (\%$). |
+| [ep_val.csv](../data/processed/aep_val.csv) | Bảng hoàn chỉnh (Val) | .159$ | $ | $pprox 3,3	ext{ MB}$ | Chứa DatetimeIndex, Target $ và  \dots lag_{24}$ (,5\%$). |
+| [ep_test.csv](../data/processed/aep_test.csv) | Bảng hoàn chỉnh (Test) | .159$ | $ | $pprox 3,3	ext{ MB}$ | Chứa DatetimeIndex, Target $ và  \dots lag_{24}$ (,5\%$). |
+| [X_train.csv](../data/processed/X_train.csv) | Ma trận đặc trưng (Train) | .954$ | $ | $pprox 19,4	ext{ MB}$ | Chỉ chứa các cột  \dots lag_{24}$ của tập Train. |
+| [y_train.csv](../data/processed/y_train.csv) | Vector mục tiêu (Train) | .954$ | $ | $pprox 2,6	ext{ MB}$ | Chỉ chứa nhãn mục tiêu phụ tải $ của tập Train. |
+| [X_val.csv](../data/processed/X_val.csv) | Ma trận đặc trưng (Val) | .159$ | $ | $pprox 3,2	ext{ MB}$ | Chỉ chứa các cột  \dots lag_{24}$ của tập Val. |
+| [y_val.csv](../data/processed/y_val.csv) | Vector mục tiêu (Val) | .159$ | $ | $pprox 0,4	ext{ MB}$ | Chỉ chứa nhãn mục tiêu phụ tải $ của tập Val. |
+| [X_test.csv](../data/processed/X_test.csv) | Ma trận đặc trưng (Test) | .159$ | $ | $pprox 3,2	ext{ MB}$ | Chỉ chứa các cột  \dots lag_{24}$ của tập Test. |
+| [y_test.csv](../data/processed/y_test.csv) | Vector mục tiêu (Test) | .159$ | $ | $pprox 0,4	ext{ MB}$ | Chỉ chứa nhãn mục tiêu phụ tải $ của tập Test. |
+
+---
+
+## 6. Đúc Kết & Sẵn Sàng Cho Bước 5 (Huấn Luyện XGBoost)
 
 Việc có sẵn tập Validation độc lập tạo điều kiện lý tưởng cho **Bước 5: Huấn luyện mô hình XGBoost Regressor**:
 ```python
