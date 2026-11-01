@@ -128,7 +128,15 @@ Bảng dưới đây minh họa quá trình biến đổi từ chuỗi 1 chiều
 
 ## 6. Thiết Kế Bộ Đặc Trưng Đa Chu Kỳ (24h Gần Nhất + 2-3 Ngày Trước + Chu Kỳ Tuần 7 Ngày)
 
-### 6.1. Căn cứ lựa chọn bộ đặc trưng đa chu kỳ (29 đặc trưng trễ)
+### 6.1. Khảo sát tự tương quan (ACF & PACF) xác lập cơ sở khoa học
+Biểu đồ tự tương quan (ACF) và tự tương quan từng phần (PACF) là công cụ định lượng chuẩn mực để nhận diện chu kỳ và các bậc trễ tối ưu:
+
+![Biểu Đồ ACF và PACF](images/04_acf_pacf_analysis.png)
+
+* **Hệ số ACF:** Dao động sóng hình sin tuần hoàn với các đỉnh cực đại tại bội số của 24 giờ (lag 24: .8741$, lag 48: .7391$, lag 72: .6859$).
+* **Hệ số PACF:** Cắt cụt rõ rệt và xuất hiện các vạch vượt trội tại lag 1 (.9762$), lag 2 ($-0.8149$), lag 24 ($-0.4873$) và lag 25 ($-0.4817$).
+
+### 6.2. Căn cứ lựa chọn bộ đặc trưng đa chu kỳ (29 đặc trưng trễ)
 Thay vì chỉ lấy cố định 24 bậc trễ của ngày hôm trước, thiết kế đa chu kỳ khai thác tối đa cấu trúc vật lý của phụ tải lưới điện:
 1. **Nhóm 1 - Quán tính ngắn hạn & Chu kỳ ngày ($lag_1 \rightarrow lag_{24}$ - 24 đặc trưng):**
    - Các giờ liền kề gần nhất ($lag_1, lag_2$): nắm bắt xu hướng tăng/giảm tức thời và quán tính cục bộ.
