@@ -41,12 +41,22 @@ Mục tiêu chính bao gồm:
 ```text
 Lab3_TS/
 ├── data/
-│   ├── AEP_hourly.csv                              # Dữ liệu tiêu thụ điện hàng giờ AEP (Dataset chính)
-│   ├── COMED_hourly.csv                            # Dữ liệu đối chứng vùng Commonwealth Edison
-│   ├── DAYTON_hourly.csv                           # Dữ liệu đối chứng Dayton
-│   └── ...                                         # Các dataset phụ tải PJM khác
-├── scripts/
+│   ├── raw/
+│   │   └── AEP_hourly.csv                          # Dữ liệu tiêu thụ điện hàng giờ AEP (Dataset chính)
+│   └── processed/
+│       ├── aep_train.csv, aep_val.csv, aep_test.csv# Dữ liệu đã phân chia Train (75%) - Val (12.5%) - Test (12.5%)
+│       └── X_train.csv, y_train.csv ...            # Ma trận đặc trưng và nhãn mục tiêu tách rời
+├── notebooks/
 │   └── main.ipynb                                  # Jupyter Notebook thực hành toàn diện (Các bước 1 -> 7 & Nâng cao)
+├── scripts/                                        # Module Python đóng gói chuẩn mực (Class, Models, Configs)
+│   ├── __init__.py                                 # Package init
+│   ├── config.py                                   # Quản lý siêu tham số, tỷ lệ chia, đường dẫn
+│   ├── data_loader.py                              # Xử lý nạp dữ liệu thô, DST, interpolate
+│   ├── feature_engineering.py                      # Tạo lag features, rolling statistics, time-based split
+│   ├── models.py                                   # Các Class mô hình (XGBoostForecaster, RandomForest...)
+│   ├── evaluation.py                               # Độ đo đánh giá (MAE, RMSE, MAPE, Ljung-Box)
+│   ├── visualization.py                            # Các hàm trực quan hóa và tự động lưu biểu đồ
+│   └── train.py                                    # Script chạy toàn bộ pipeline tự động từ dòng lệnh (CLI)
 └── docs/
     ├── README.md                                   # Trang chủ tài liệu & chỉ mục
     ├── 01_data_preparation_and_lag_features.md     # Tài liệu: Chuẩn bị dữ liệu & Kỹ thuật tạo Lag / Rolling Features
