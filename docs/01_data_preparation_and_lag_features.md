@@ -79,17 +79,20 @@ Kết quả thống kê mô tả từ hàm `series.describe()` trên toàn bộ 
 
 ---
 
-### 4.2. Thu phóng 2 tuần điển hình: Nhịp điệu ngày/đêm & Sự sụt giảm cuối tuần
+### 4.2. Thu phóng 14 ngày (2 tuần) nén 12 điểm/ngày (`2h`): Nhịp điệu theo giờ (`h`) & Quy luật tuần
 
 ![Thu phóng 2 tuần điển hình phụ tải AEP](images/02_aep_zoomin_2weeks.png)
 
-Quan sát lát cắt 2 tuần liên tục (từ `09/01/2017` đến `22/01/2017`) làm sáng tỏ hai đặc trưng cấu trúc then chốt:
+Để triệt tiêu nhiễu ngắn hạn từng giờ và làm nổi bật quy luật chu kỳ, chuỗi 14 ngày liên tục (2 tuần trọn vẹn từ Thứ Hai `02/11/2009` đến Chủ Nhật `15/11/2009`) được nén từ 24 điểm/ngày xuống **12 điểm/ngày** bằng cách lấy trung bình mỗi cụm 2 giờ (`resample('2h').mean()`, tương ứng các mốc giờ: `00h, 02h, 04h, 06h, 08h, 10h, 12h, 14h, 16h, 18h, 20h, 22h`):
 
-1. **Chu kỳ hàng ngày (Daily 24-hour cycle):**
-   - Đỉnh sáng (~08:00–10:00) và đỉnh tối (~18:00–20:00) xuất hiện đều đặn mỗi ngày do lịch trình sinh hoạt và làm việc.
-   - Đáy thấp điểm (~03:00–05:00 sáng) tụt sâu khi hoạt động sinh hoạt giảm.
-2. **Chu kỳ hàng tuần (Weekly 168-hour cycle):**
-   - Các vùng tô xám (Thứ Bảy và Chủ Nhật) chứng kiến phụ tải sụt giảm rõ rệt so với các ngày trong tuần (Thứ Hai đến Thứ Sáu) do các cơ sở công nghiệp, công sở ngừng làm việc.
+1. **Chu kỳ hàng ngày theo từng mốc giờ (`h`) — 12 điểm/ngày:**
+   - **Đáy đêm (`04h`):** Phụ tải tụt sâu nhất vào khoảng `02h–04h` sáng ($\sim 12.550 - 13.500\text{ MW}$) khi hoạt động sản xuất và dân sinh nghỉ ngơi.
+   - **Đỉnh sáng (`08h`):** Phụ tải tăng vọt lên đỉnh thứ nhất lúc `08h` sáng ($\sim 16.500 - 17.215\text{ MW}$) khi các nhà máy, văn phòng và nhu cầu sưởi ấm khởi động.
+   - **Võng trưa (`14h`):** Phụ tải hạ nhiệt nhẹ vào khung giờ trưa – đầu giờ chiều (`12h–16h`).
+   - **Đỉnh tối (`20h`):** Phụ tải bật tăng trở lại đạt đỉnh thứ hai lúc `18h–20h` tối ($\sim 16.200 - 16.608\text{ MW}$) do nhu cầu chiếu sáng và sinh hoạt gia đình.
+2. **Quy luật hàng tuần cực mạnh (Weekly 168-hour cycle, tương quan $r = 0,931$):**
+   - **Panel (A) - Chuỗi 14 ngày liên tiếp:** Ở cả **Tuần 1** và **Tuần 2**, 5 ngày làm việc (`T2` $\rightarrow$ `T6`) giữ mức tiêu thụ trung bình cao **$14.993\text{ MW}$**, trong khi hai ngày nghỉ cuối tuần (`T7 & CN` - vùng tô xám) đồng loạt sụt giảm xuống mức trung bình **$13.123\text{ MW}$** (giảm trung bình **$-1.869\text{ MW}$**).
+   - **Panel (B) - Đối chiếu trực tiếp Tuần 1 vs Tuần 2 & Trung bình gộp 2 tuần trên 84 mốc (`7 ngày × 12 mốc giờ/ngày`):** Khi xếp chồng **Tuần 1**, **Tuần 2** và **Đường trung bình gộp 2 tuần** theo đúng các mốc giờ (`00h, 04h, 08h, 12h, 16h, 20h`) của từng thứ trong tuần (`T2 -> CN`), hai đường tuần gần như trùng khít lên nhau với hệ số tương quan Pearson đạt **$r = 0,931$**. Đây là bằng chứng trực quan rõ nhất lý giải vì sao việc bổ sung cụm biến trễ tuần (`lag_167`, `lag_168`, `lag_169`) cùng chuỗi `lag_1..24` lại giúp mô hình XGBoost dự báo chính xác cả nhịp ngày lẫn nhịp tuần.
 
 ---
 
