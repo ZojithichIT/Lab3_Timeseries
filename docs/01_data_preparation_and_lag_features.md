@@ -1,6 +1,6 @@
 # Tiền Xử Lý & Khám Phá Dữ Liệu Chuỗi Thời Gian (Data Preparation & EDA)
 
-Tài liệu này chi tiết hóa toàn bộ quy trình kiểm tra chất lượng dữ liệu, xử lý tính liên tục thời gian (Daylight Saving Time, mốc trùng lặp / thiếu hụt), thống kê mô tả (`describe`) và phân tích trực quan hóa chuỗi dữ liệu tiêu thụ điện **AEP Hourly Energy Consumption** được triển khai trong notebook [`scripts/main.ipynb`](../scripts/main.ipynb).
+Tài liệu này chi tiết hóa toàn bộ quy trình kiểm tra chất lượng dữ liệu, xử lý tính liên tục thời gian (Daylight Saving Time, mốc trùng lặp / thiếu hụt), thống kê mô tả (`describe`) và phân tích trực quan hóa chuỗi dữ liệu tiêu thụ điện **AEP Hourly Energy Consumption** được triển khai trong notebook [`notebooks/main.ipynb`](../notebooks/main.ipynb).
 
 ---
 
@@ -156,7 +156,7 @@ Thay vì chỉ lấy cố định 24 bậc trễ của ngày hôm trước, thi�
 
 ### 6.2. Triển khai mã nguồn trong Notebook
 
-Hàm `create_lag_features` được triển khai chuẩn hóa trong [`scripts/main.ipynb`](../scripts/main.ipynb):
+Hàm `create_lag_features` được triển khai chuẩn hóa trong [`notebooks/main.ipynb`](../notebooks/main.ipynb):
 
 ```python
 def create_lag_features(data_series):

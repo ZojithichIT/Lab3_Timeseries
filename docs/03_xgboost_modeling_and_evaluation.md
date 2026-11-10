@@ -1,6 +1,6 @@
 # Huấn Luyện, Đánh Giá, Giải Mã Feature Importance & Bài Tập Nâng Cao (XGBoost Modeling, Evaluation, Multi-Step & Advanced Tasks)
 
-Tài liệu này chi tiết hóa toàn bộ quy trình thực hiện **Bước 5: Huấn luyện mô hình XGBoost Regressor**, **Bước 6: Dự đoán & Đánh giá trên tập Test**, **Bước 7: Phân tích Feature Importance** và các **Bài tập Nâng cao (1. Rolling Features, 2. Multi-Step Forecasting)** trong notebook [`scripts/main.ipynb`](../scripts/main.ipynb).
+Tài liệu này chi tiết hóa toàn bộ quy trình thực hiện **Bước 5: Huấn luyện mô hình XGBoost Regressor**, **Bước 6: Dự đoán & Đánh giá trên tập Test**, **Bước 7: Phân tích Feature Importance** và các **Bài tập Nâng cao (1. Rolling Features, 2. Multi-Step Forecasting)** trong notebook [`notebooks/main.ipynb`](../notebooks/main.ipynb).
 
 ---
 

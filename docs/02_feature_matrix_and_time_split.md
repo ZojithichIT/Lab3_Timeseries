@@ -1,6 +1,6 @@
 # Phân Tách Đặc Trưng & Phân Chia Train / Validation / Test (Feature Matrix & Time-Based Splitting)
 
-Tài liệu này chi tiết hóa toàn bộ quy trình thực hiện **Bước 3: Chia $X - y$** và **Bước 4: Chia Train / Validation / Test theo thời gian** với tỷ lệ **$75\% - 12.5\% - 12.5\%$** trong notebook [`scripts/main.ipynb`](../scripts/main.ipynb).
+Tài liệu này chi tiết hóa toàn bộ quy trình thực hiện **Bước 3: Chia $X - y$** và **Bước 4: Chia Train / Validation / Test theo thời gian** với tỷ lệ **$75\% - 12.5\% - 12.5\%$** trong notebook [`notebooks/main.ipynb`](../notebooks/main.ipynb).
 
 ---
 
