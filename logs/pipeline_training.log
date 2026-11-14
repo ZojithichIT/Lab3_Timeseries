@@ -1,0 +1,189 @@
+2026-11-14 22:01:52 | INFO    | =====================================================================================
+2026-11-14 22:01:52 | INFO    | STARTING TIME SERIES ML PIPELINE (Lags = 24, XGB Learning Rate = 0.05)
+2026-11-14 22:01:52 | INFO    | =====================================================================================
+2026-11-14 22:01:52 | INFO    | Environment: Python 3.12.5 | OS: Windows 11 (10.0.26300) | CPUs: 12
+2026-11-14 22:01:52 | INFO    | Libraries: numpy=2.5.3, pandas=3.0.6, scikit-learn=1.9.1, xgboost=3.4.1, statsmodels=0.15.0
+2026-11-14 22:01:52 | INFO    | Log File Path     : E:\TimeSeries\Lab3_TS\logs\pipeline_training.log
+2026-11-14 22:01:52 | INFO    | Summary Text Path : E:\TimeSeries\Lab3_TS\logs\model_comparison_summary.txt
+2026-11-14 22:01:52 | INFO    | -------------------------------------------------------------------------------------
+2026-11-14 22:01:52 | INFO    | [1/6] Loading and cleaning raw hourly energy consumption series...
+2026-11-14 22:01:52 | INFO    | -> Cleaned series: 121,296 observations from 2004-10-01 01:00:00 to 2018-08-03 00:00:00 (NaN count: 0)
+2026-11-14 22:01:52 | INFO    | -> Descriptive stats: Mean=15,499.15 MW, Std=2,591.38 MW, Min=9,581.00 MW (2016-10-02 05:00:00), Max=25,695.00 MW (2008-10-20 14:00:00)
+2026-11-14 22:01:52 | INFO    | -------------------------------------------------------------------------------------
+2026-11-14 22:01:52 | INFO    | [2/6] Building 24 lag features and splitting into Train / Validation / Test...
+2026-11-14 22:01:56 | INFO    | -> Train Set     :  90,954 rows ( 75.0%) | [2004-10-02 01:00:00 -> 2015-02-16 18:00:00] | Mean=15,762.54 MW, Std=2,574.97 MW
+2026-11-14 22:01:56 | INFO    | -> Validation Set:  15,159 rows ( 12.5%) | [2015-02-16 19:00:00 -> 2016-11-09 09:00:00] | Mean=14,618.89 MW, Std=2,575.58 MW
+2026-11-14 22:01:56 | INFO    | -> Test Set      :  15,159 rows ( 12.5%) | [2016-11-09 10:00:00 -> 2018-08-03 00:00:00] | Mean=14,801.07 MW, Std=2,373.28 MW
+2026-11-14 22:01:56 | INFO    | -------------------------------------------------------------------------------------
+2026-11-14 22:01:56 | INFO    | [3/6] Training Model 1/3: Linear Regression Baseline (LinearRegressionForecaster)...
+2026-11-14 22:01:56 | INFO    | -> Hyperparameters: {'fit_intercept': True, 'positive': False, 'n_jobs': None, 'n_features': 24}
+2026-11-14 22:01:57 | INFO    | --- Evaluation Summary: Linear Regression (Train Time: 0.23s) ---
+2026-11-14 22:01:57 | INFO    |   [Train Set]      MAE:   166.32 MW | RMSE:   236.45 MW | MAPE:  1.07% | R2: 0.9916
+2026-11-14 22:01:57 | INFO    |   [Validation Set] MAE:   153.96 MW | RMSE:   213.86 MW | MAPE:  1.07% | R2: 0.9931
+2026-11-14 22:01:57 | INFO    |   [Test Set]       MAE:   145.39 MW | RMSE:   195.04 MW | MAPE:  1.00% | R2: 0.9932
+2026-11-14 22:01:57 | INFO    |   [Generalization] Overfitting Gap (Test RMSE - Train RMSE): -41.41 MW
+2026-11-14 22:01:57 | INFO    |   [Residuals Test] Mean Bias: -8.32 MW | Std: 194.86 MW | Ljung-Box(24) Stat: 4508.23, p-val: 0.0000e+00 (White Noise: False)
+2026-11-14 22:01:57 | INFO    |   [Linear Weights] Intercept: +137.6413 | Top 5 Coefs: lag_1=+1.6400, lag_2=-0.8875, lag_23=+0.6837, lag_24=-0.4901, lag_3=+0.2540
+2026-11-14 22:01:57 | INFO    | -------------------------------------------------------------------------------------
+2026-11-14 22:01:57 | INFO    | [4/6] Training Model 2/3: Random Forest Regressor (RandomForestForecaster)...
+2026-11-14 22:01:57 | INFO    | -> Hyperparameters: {'n_estimators': 300, 'max_depth': 15, 'min_samples_split': 5, 'min_samples_leaf': 2, 'random_state': 42, 'n_jobs': -1}
+2026-11-14 22:03:09 | INFO    | --- Evaluation Summary: Random Forest Regressor (Train Time: 70.23s) ---
+2026-11-14 22:03:09 | INFO    |   [Train Set]      MAE:    82.36 MW | RMSE:   114.47 MW | MAPE:  0.52% | R2: 0.9980
+2026-11-14 22:03:09 | INFO    |   [Validation Set] MAE:   143.31 MW | RMSE:   199.11 MW | MAPE:  0.99% | R2: 0.9940
+2026-11-14 22:03:09 | INFO    |   [Test Set]       MAE:   140.90 MW | RMSE:   192.27 MW | MAPE:  0.96% | R2: 0.9934
+2026-11-14 22:03:09 | INFO    |   [Generalization] Overfitting Gap (Test RMSE - Train RMSE): +77.80 MW
+2026-11-14 22:03:09 | INFO    |   [Residuals Test] Mean Bias: -14.12 MW | Std: 191.75 MW | Ljung-Box(24) Stat: 3533.58, p-val: 0.0000e+00 (White Noise: False)
+2026-11-14 22:03:09 | INFO    |   [Top 5 Features] lag_1=0.9538, lag_2=0.0115, lag_22=0.0080, lag_3=0.0060, lag_23=0.0039
+2026-11-14 22:03:09 | INFO    | -------------------------------------------------------------------------------------
+2026-11-14 22:03:09 | INFO    | [5/6] Training Model 3/3: XGBoost Regressor (XGBoostForecaster)...
+2026-11-14 22:03:09 | INFO    | -> Hyperparameters: {'n_estimators': 1000, 'learning_rate': 0.05, 'max_depth': 6, 'subsample': 0.8, 'colsample_bytree': 0.8, 'objective': 'reg:squarederror', 'eval_metric': 'rmse', 'early_stopping_rounds': 50, 'random_state': 42, 'n_jobs': -1}
+2026-11-14 22:03:17 | INFO    |   [XGBoost Round    1/1000] Train RMSE:  2450.29 MW | Val RMSE:  2682.27 MW
+2026-11-14 22:03:17 | INFO    |   [XGBoost Round  101/1000] Train RMSE:   233.49 MW | Val RMSE:   236.29 MW
+2026-11-14 22:03:17 | INFO    |   [XGBoost Round  201/1000] Train RMSE:   200.38 MW | Val RMSE:   212.65 MW
+2026-11-14 22:03:17 | INFO    |   [XGBoost Round  301/1000] Train RMSE:   185.74 MW | Val RMSE:   202.58 MW
+2026-11-14 22:03:17 | INFO    |   [XGBoost Round  401/1000] Train RMSE:   175.37 MW | Val RMSE:   196.04 MW
+2026-11-14 22:03:17 | INFO    |   [XGBoost Round  501/1000] Train RMSE:   167.86 MW | Val RMSE:   191.85 MW
+2026-11-14 22:03:17 | INFO    |   [XGBoost Round  601/1000] Train RMSE:   161.47 MW | Val RMSE:   189.41 MW
+2026-11-14 22:03:17 | INFO    |   [XGBoost Round  701/1000] Train RMSE:   155.95 MW | Val RMSE:   186.97 MW
+2026-11-14 22:03:17 | INFO    |   [XGBoost Round  801/1000] Train RMSE:   151.09 MW | Val RMSE:   185.16 MW
+2026-11-14 22:03:17 | INFO    |   [XGBoost Round  901/1000] Train RMSE:   146.93 MW | Val RMSE:   183.70 MW
+2026-11-14 22:03:17 | INFO    |   [XGBoost Round 1000/1000] Train RMSE:   143.20 MW | Val RMSE:   182.73 MW
+2026-11-14 22:03:17 | INFO    | -> XGBoost converged in 7.66s | Best Iteration: 1000 | Best Val RMSE: 182.73 MW
+2026-11-14 22:03:18 | INFO    | --- Evaluation Summary: XGBoost Baseline (Train Time: 7.66s) ---
+2026-11-14 22:03:18 | INFO    |   [Train Set]      MAE:   108.47 MW | RMSE:   143.20 MW | MAPE:  0.70% | R2: 0.9969
+2026-11-14 22:03:18 | INFO    |   [Validation Set] MAE:   132.51 MW | RMSE:   182.73 MW | MAPE:  0.92% | R2: 0.9950
+2026-11-14 22:03:18 | INFO    |   [Test Set]       MAE:   132.37 MW | RMSE:   179.22 MW | MAPE:  0.91% | R2: 0.9943
+2026-11-14 22:03:18 | INFO    |   [Generalization] Overfitting Gap (Test RMSE - Train RMSE): +36.02 MW
+2026-11-14 22:03:18 | INFO    |   [Residuals Test] Mean Bias: -12.58 MW | Std: 178.77 MW | Ljung-Box(24) Stat: 2153.55, p-val: 0.0000e+00 (White Noise: False)
+2026-11-14 22:03:18 | INFO    |   [Top 5 Features] lag_1=719454976.0000, lag_2=82115304.0000, lag_22=27467278.0000, lag_23=21404208.0000, lag_3=11033408.0000
+2026-11-14 22:03:18 | INFO    | -------------------------------------------------------------------------------------
+2026-11-14 22:03:18 | INFO    | [6/6] Exporting benchmark comparison summary and visualizations...
+2026-11-14 22:03:18 | INFO    | -> Saved model comparison summary report to: E:\TimeSeries\Lab3_TS\logs\model_comparison_summary.txt
+2026-11-14 22:03:20 | INFO    | -> Updated evaluation plots in: E:\TimeSeries\Lab3_TS\docs\images
+2026-11-14 22:03:20 | INFO    | -------------------------------------------------------------------------------------
+2026-11-14 22:03:20 | INFO    | FINAL MODEL RANKING ON TEST SET (BY TEST RMSE):
+2026-11-14 22:03:20 | INFO    |   #1 XGBoost Baseline          | Test RMSE:  179.22 MW | Test MAE:  132.37 MW | Test MAPE:  0.91% | R2: 0.9943 | Time: 7.66s
+2026-11-14 22:03:20 | INFO    |   #2 Random Forest Regressor   | Test RMSE:  192.27 MW | Test MAE:  140.90 MW | Test MAPE:  0.96% | R2: 0.9934 | Time: 70.23s
+2026-11-14 22:03:20 | INFO    |   #3 Linear Regression         | Test RMSE:  195.04 MW | Test MAE:  145.39 MW | Test MAPE:  1.00% | R2: 0.9932 | Time: 0.23s
+2026-11-14 22:03:20 | INFO    | =====================================================================================
+2026-11-14 22:03:20 | INFO    | PIPELINE COMPLETED SUCCESSFULLY IN 88.17 SECONDS!
+2026-11-14 22:03:20 | INFO    | =====================================================================================
+
+2026-11-14 22:21:51 | INFO    | ==========================================================================================
+2026-11-14 22:21:51 | INFO    | STARTING COMPLETE LAB 3 TIME SERIES ML PIPELINE (XGB Learning Rate = 0.05)
+2026-11-14 22:21:51 | INFO    | ==========================================================================================
+2026-11-14 22:21:51 | INFO    | Environment: Python 3.12.5 | OS: Windows 11 (10.0.26300) | CPUs: 12
+2026-11-14 22:21:51 | INFO    | Libraries: numpy=2.5.3, pandas=3.0.6, scikit-learn=1.9.1, xgboost=3.4.1, statsmodels=0.15.0
+2026-11-14 22:21:51 | INFO    | Log File Path     : E:\TimeSeries\Lab3_TS\logs\pipeline_training.log
+2026-11-14 22:21:51 | INFO    | Summary Text Path : E:\TimeSeries\Lab3_TS\logs\model_comparison_summary.txt
+2026-11-14 22:21:51 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:21:51 | INFO    | [1/8] Loading and cleaning raw hourly energy consumption series...
+2026-11-14 22:21:51 | INFO    | -> Cleaned series: 121,296 observations from 2004-10-01 01:00:00 to 2018-08-03 00:00:00 (NaN count: 0)
+2026-11-14 22:21:51 | INFO    | -> Descriptive stats: Mean=15,499.15 MW, Std=2,591.38 MW, Min=9,581.00 MW (2016-10-02 05:00:00), Max=25,695.00 MW (2008-10-20 14:00:00)
+2026-11-14 22:21:51 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:21:51 | INFO    | [2/8] Building 29 Selective Lags & 24 Dense Lags and splitting Train / Val / Test...
+2026-11-14 22:21:54 | INFO    | -> [29 Selective Lags] Train Set     :  90,845 rows ( 75.0%) | [2004-10-08 02:00:00 -> 2015-02-18 06:00:00]
+2026-11-14 22:21:54 | INFO    | -> [29 Selective Lags] Validation Set:  15,140 rows ( 12.5%) | [2015-02-18 07:00:00 -> 2016-11-10 02:00:00]
+2026-11-14 22:21:54 | INFO    | -> [29 Selective Lags] Test Set      :  15,142 rows ( 12.5%) | [2016-11-10 03:00:00 -> 2018-08-03 00:00:00]
+2026-11-14 22:21:54 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:21:54 | INFO    | [3/8] Evaluating Naive Baselines & Core Models (Linear Regression, Random Forest, XGBoost)...
+2026-11-14 22:21:55 | INFO    | -> Persistence Naive (lag_1)     | Test MAE:  399.30 MW | Test RMSE:  512.41 MW | MAPE:  2.74%
+2026-11-14 22:21:55 | INFO    | -> Seasonal Naive 24h (lag_24)   | Test MAE:  945.01 MW | Test RMSE: 1235.36 MW | MAPE:  6.37%
+2026-11-14 22:21:56 | INFO    | -> Weekly Naive 168h (lag_168)   | Test MAE: 1489.92 MW | Test RMSE: 1953.74 MW | MAPE:  9.89%
+2026-11-14 22:21:56 | INFO    | --- Evaluation Summary: Linear Regression (29 Lags) (Train Time: 0.05s) ---
+2026-11-14 22:21:56 | INFO    |   [Train Set]      MAE:   138.82 MW | RMSE:   192.55 MW | MAPE:  0.89% | R2: 0.9944
+2026-11-14 22:21:56 | INFO    |   [Validation Set] MAE:   133.00 MW | RMSE:   179.16 MW | MAPE:  0.92% | R2: 0.9951
+2026-11-14 22:21:56 | INFO    |   [Test Set]       MAE:   128.33 MW | RMSE:   168.73 MW | MAPE:  0.88% | R2: 0.9949
+2026-11-14 22:21:56 | INFO    |   [Generalization] Overfitting Gap (Test RMSE - Train RMSE): -23.82 MW
+2026-11-14 22:21:56 | INFO    |   [Residuals Test] Mean Bias: -5.37 MW | Std: 168.64 MW | Ljung-Box(24) Stat: 5665.36, p-val: 0.0000e+00 (White Noise: False)
+2026-11-14 22:21:56 | INFO    |   [Linear Weights] Intercept: +87.3819 | Top 5 Coefs: lag_1=+1.3468, lag_168=+0.5385, lag_169=-0.5009, lag_2=-0.4699, lag_23=+0.3630
+2026-11-14 22:22:35 | INFO    | --- Evaluation Summary: Random Forest (29 Lags) (Train Time: 37.38s) ---
+2026-11-14 22:22:35 | INFO    |   [Train Set]      MAE:    74.88 MW | RMSE:   104.56 MW | MAPE:  0.48% | R2: 0.9984
+2026-11-14 22:22:35 | INFO    |   [Validation Set] MAE:   141.01 MW | RMSE:   194.32 MW | MAPE:  0.98% | R2: 0.9943
+2026-11-14 22:22:35 | INFO    |   [Test Set]       MAE:   139.76 MW | RMSE:   188.69 MW | MAPE:  0.95% | R2: 0.9937
+2026-11-14 22:22:35 | INFO    |   [Generalization] Overfitting Gap (Test RMSE - Train RMSE): +84.13 MW
+2026-11-14 22:22:35 | INFO    |   [Residuals Test] Mean Bias: -12.95 MW | Std: 188.24 MW | Ljung-Box(24) Stat: 5430.65, p-val: 0.0000e+00 (White Noise: False)
+2026-11-14 22:22:35 | INFO    |   [Top 5 Features] lag_1=0.6907, lag_2=0.1997, lag_24=0.0424, lag_23=0.0214, lag_22=0.0113
+2026-11-14 22:22:42 | INFO    | --- Evaluation Summary: XGBoost Dense (24 Lags) (Train Time: 6.21s) ---
+2026-11-14 22:22:42 | INFO    |   [Train Set]      MAE:   108.47 MW | RMSE:   143.20 MW | MAPE:  0.70% | R2: 0.9969
+2026-11-14 22:22:42 | INFO    |   [Validation Set] MAE:   132.51 MW | RMSE:   182.73 MW | MAPE:  0.92% | R2: 0.9950
+2026-11-14 22:22:42 | INFO    |   [Test Set]       MAE:   132.37 MW | RMSE:   179.22 MW | MAPE:  0.91% | R2: 0.9943
+2026-11-14 22:22:42 | INFO    |   [Generalization] Overfitting Gap (Test RMSE - Train RMSE): +36.02 MW
+2026-11-14 22:22:42 | INFO    |   [Residuals Test] Mean Bias: -12.58 MW | Std: 178.77 MW | Ljung-Box(24) Stat: 2153.55, p-val: 0.0000e+00 (White Noise: False)
+2026-11-14 22:22:42 | INFO    |   [Top 5 Features] lag_1=719454976.0000, lag_2=82115304.0000, lag_22=27467278.0000, lag_23=21404208.0000, lag_3=11033408.0000
+2026-11-14 22:22:49 | INFO    |   [XGBoost 29-Lag Round    1/1000] Train RMSE:  2464.52 MW | Val RMSE:  2688.73 MW
+2026-11-14 22:22:49 | INFO    |   [XGBoost 29-Lag Round  201/1000] Train RMSE:   188.25 MW | Val RMSE:   206.74 MW
+2026-11-14 22:22:49 | INFO    |   [XGBoost 29-Lag Round  401/1000] Train RMSE:   162.24 MW | Val RMSE:   187.43 MW
+2026-11-14 22:22:49 | INFO    |   [XGBoost 29-Lag Round  601/1000] Train RMSE:   149.22 MW | Val RMSE:   180.19 MW
+2026-11-14 22:22:49 | INFO    |   [XGBoost 29-Lag Round  801/1000] Train RMSE:   139.57 MW | Val RMSE:   176.21 MW
+2026-11-14 22:22:49 | INFO    |   [XGBoost 29-Lag Round 1000/1000] Train RMSE:   132.19 MW | Val RMSE:   173.39 MW
+2026-11-14 22:22:49 | INFO    | --- Evaluation Summary: XGBoost Baseline (29 Lags) (Train Time: 6.97s) ---
+2026-11-14 22:22:49 | INFO    |   [Train Set]      MAE:   101.39 MW | RMSE:   132.19 MW | MAPE:  0.65% | R2: 0.9974
+2026-11-14 22:22:49 | INFO    |   [Validation Set] MAE:   128.62 MW | RMSE:   173.39 MW | MAPE:  0.90% | R2: 0.9954
+2026-11-14 22:22:49 | INFO    |   [Test Set]       MAE:   127.61 MW | RMSE:   168.60 MW | MAPE:  0.87% | R2: 0.9950
+2026-11-14 22:22:49 | INFO    |   [Generalization] Overfitting Gap (Test RMSE - Train RMSE): +36.41 MW
+2026-11-14 22:22:49 | INFO    |   [Residuals Test] Mean Bias: -5.24 MW | Std: 168.52 MW | Ljung-Box(24) Stat: 2837.06, p-val: 0.0000e+00 (White Noise: False)
+2026-11-14 22:22:49 | INFO    |   [Top 5 Features] lag_1=497732512.0000, lag_2=339515936.0000, lag_24=106366232.0000, lag_22=53695148.0000, lag_3=46821624.0000
+2026-11-14 22:22:49 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:22:49 | INFO    | [4/8] Advanced Ex 1: Training XGBoost Enhanced (29 Lags + 6 Rolling Features)...
+2026-11-14 22:22:58 | INFO    | --- Evaluation Summary: XGBoost Enhanced (+6 Rolling) (Train Time: 7.74s) ---
+2026-11-14 22:22:58 | INFO    |   [Train Set]      MAE:    98.58 MW | RMSE:   128.50 MW | MAPE:  0.63% | R2: 0.9975
+2026-11-14 22:22:58 | INFO    |   [Validation Set] MAE:   124.88 MW | RMSE:   167.84 MW | MAPE:  0.87% | R2: 0.9957
+2026-11-14 22:22:58 | INFO    |   [Test Set]       MAE:   126.10 MW | RMSE:   166.18 MW | MAPE:  0.86% | R2: 0.9951
+2026-11-14 22:22:58 | INFO    |   [Generalization] Overfitting Gap (Test RMSE - Train RMSE): +37.68 MW
+2026-11-14 22:22:58 | INFO    |   [Residuals Test] Mean Bias: -6.39 MW | Std: 166.05 MW | Ljung-Box(24) Stat: 2543.90, p-val: 0.0000e+00 (White Noise: False)
+2026-11-14 22:22:58 | INFO    |   [Top 5 Features] lag_1=748313600.0000, lag_23=146627280.0000, lag_2=104220160.0000, lag_24=97972496.0000, lag_3=77198264.0000
+2026-11-14 22:22:58 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:22:58 | INFO    | [5/8] Advanced Ex 3: Running TimeSeriesSplit (5-Fold Expanding Window) & Refit...
+2026-11-14 22:25:46 | INFO    |   -> Config 1 (Shallow, lr=0.10)    | Folds: [227.04 | 220.61 | 192.67 | 194.83 | 190.17] | Mean: 205.06 +/- 15.53 MW
+2026-11-14 22:25:46 | INFO    |   -> Config 2 (Shallow, lr=0.05)    | Folds: [227.46 | 222.65 | 195.98 | 197.75 | 193.44] | Mean: 207.46 +/- 14.51 MW
+2026-11-14 22:25:46 | INFO    |   -> Config 3 (Baseline, d=6)       | Folds: [220.46 | 207.99 | 179.28 | 179.46 | 174.91] | Mean: 192.42 +/- 18.31 MW
+2026-11-14 22:25:46 | INFO    |   -> Config 4 (Balanced, d=6, reg)  | Folds: [218.35 | 205.60 | 176.14 | 178.84 | 174.05] | Mean: 190.60 +/- 17.98 MW
+2026-11-14 22:25:46 | INFO    |   -> Config 5 (Deep, d=7, lr=0.04)  | Folds: [221.96 | 205.93 | 175.15 | 178.18 | 172.21] | Mean: 190.69 +/- 19.75 MW
+2026-11-14 22:25:46 | INFO    |   -> Config 6 (Deep, d=8, lr=0.03)  | Folds: [225.83 | 207.50 | 176.05 | 179.21 | 172.64] | Mean: 192.25 +/- 20.87 MW
+2026-11-14 22:25:47 | INFO    | --- Evaluation Summary: XGBoost Tuned (TS-Split+Refit) (Train Time: 7.73s) ---
+2026-11-14 22:25:47 | INFO    |   [Train Set]      MAE:   104.72 MW | RMSE:   137.93 MW | MAPE:  0.67% | R2: 0.9971
+2026-11-14 22:25:47 | INFO    |   [Validation Set] MAE:    99.09 MW | RMSE:   130.11 MW | MAPE:  0.69% | R2: 0.9974
+2026-11-14 22:25:47 | INFO    |   [Test Set]       MAE:   123.28 MW | RMSE:   163.25 MW | MAPE:  0.84% | R2: 0.9953
+2026-11-14 22:25:47 | INFO    |   [Generalization] Overfitting Gap (Test RMSE - Train RMSE): +25.32 MW
+2026-11-14 22:25:47 | INFO    |   [Residuals Test] Mean Bias: -4.40 MW | Std: 163.19 MW | Ljung-Box(24) Stat: 2421.31, p-val: 0.0000e+00 (White Noise: False)
+2026-11-14 22:25:47 | INFO    |   [Top 5 Features] lag_1=745400896.0000, lag_2=459674016.0000, lag_24=139245760.0000, lag_22=71259344.0000, lag_3=60706588.0000
+2026-11-14 22:25:47 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:25:47 | INFO    | [6/8] Advanced Ex 2: Running Multi-Step Forecasting (H = 24h: Direct vs Recursive)...
+2026-11-14 22:26:44 | INFO    |   -> Horizon h=01h | Direct RMSE:  207.65 MW | Recursive RMSE:  207.65 MW | Diff: +0.00 MW
+2026-11-14 22:26:44 | INFO    |   -> Horizon h=02h | Direct RMSE:  302.04 MW | Recursive RMSE:  332.75 MW | Diff: +30.71 MW
+2026-11-14 22:26:44 | INFO    |   -> Horizon h=03h | Direct RMSE:  422.75 MW | Recursive RMSE:  472.70 MW | Diff: +49.95 MW
+2026-11-14 22:26:44 | INFO    |   -> Horizon h=06h | Direct RMSE:  784.76 MW | Recursive RMSE:  903.08 MW | Diff: +118.32 MW
+2026-11-14 22:26:44 | INFO    |   -> Horizon h=12h | Direct RMSE: 1044.76 MW | Recursive RMSE: 1211.71 MW | Diff: +166.95 MW
+2026-11-14 22:26:44 | INFO    |   -> Horizon h=18h | Direct RMSE:  968.17 MW | Recursive RMSE:  984.82 MW | Diff: +16.65 MW
+2026-11-14 22:26:44 | INFO    |   -> Horizon h=24h | Direct RMSE: 1327.31 MW | Recursive RMSE: 1189.79 MW | Diff: -137.52 MW
+2026-11-14 22:26:44 | INFO    | -> Multi-Step 24h Mean RMSE (630 cycles): Direct = 891.44 MW vs Recursive = 955.64 MW (Time: 56.88s)
+2026-11-14 22:26:44 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:26:44 | INFO    | [7/8] Discussion Q2: Running Lag Order p Sensitivity Analysis (p = 1 .. 336)...
+2026-11-14 22:28:06 | INFO    |   -> p=  1 | Lost=  1 | Train RMSE=571.84 MW | Test RMSE=511.20 MW | Gap=-60.64 MW | Time=0.57s
+2026-11-14 22:28:06 | INFO    |   -> p=  3 | Lost=  3 | Train RMSE=311.81 MW | Test RMSE=288.90 MW | Gap=-22.91 MW | Time=1.53s
+2026-11-14 22:28:06 | INFO    |   -> p=  6 | Lost=  6 | Train RMSE=255.50 MW | Test RMSE=257.59 MW | Gap= +2.09 MW | Time=1.62s
+2026-11-14 22:28:06 | INFO    |   -> p= 12 | Lost= 12 | Train RMSE=216.36 MW | Test RMSE=234.16 MW | Gap=+17.80 MW | Time=2.05s
+2026-11-14 22:28:06 | INFO    |   -> p= 24 | Lost= 24 | Train RMSE=167.94 MW | Test RMSE=188.22 MW | Gap=+20.28 MW | Time=3.21s
+2026-11-14 22:28:06 | INFO    |   -> p= 48 | Lost= 48 | Train RMSE=151.28 MW | Test RMSE=178.31 MW | Gap=+27.03 MW | Time=5.67s
+2026-11-14 22:28:06 | INFO    |   -> p= 72 | Lost= 72 | Train RMSE=150.63 MW | Test RMSE=180.47 MW | Gap=+29.83 MW | Time=7.96s
+2026-11-14 22:28:06 | INFO    |   -> p=168 | Lost=168 | Train RMSE=143.62 MW | Test RMSE=179.71 MW | Gap=+36.08 MW | Time=18.11s
+2026-11-14 22:28:06 | INFO    |   -> p=336 | Lost=336 | Train RMSE=138.04 MW | Test RMSE=175.59 MW | Gap=+37.55 MW | Time=38.88s
+2026-11-14 22:28:06 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:28:06 | INFO    | [8/8] Exporting Complete Benchmark Summary Report & Visualizations...
+2026-11-14 22:28:06 | INFO    | -> Saved complete summary report to: E:\TimeSeries\Lab3_TS\logs\model_comparison_summary.txt
+2026-11-14 22:28:08 | INFO    | -> Updated evaluation plots in: E:\TimeSeries\Lab3_TS\docs\images
+2026-11-14 22:28:08 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:28:08 | INFO    | FINAL MODEL LEADERBOARD ON TEST SET (RANKED BY TEST RMSE):
+2026-11-14 22:28:08 | INFO    |   #1  XGBoost Tuned (TS-Split+Refit)   | Test RMSE:  163.25 MW | Test MAE:  123.28 MW | Test MAPE:  0.84% | R2: 0.9953
+2026-11-14 22:28:08 | INFO    |   #2  XGBoost Enhanced (+6 Rolling)    | Test RMSE:  166.18 MW | Test MAE:  126.10 MW | Test MAPE:  0.86% | R2: 0.9951
+2026-11-14 22:28:08 | INFO    |   #3  XGBoost Baseline (29 Lags)       | Test RMSE:  168.60 MW | Test MAE:  127.61 MW | Test MAPE:  0.87% | R2: 0.9950
+2026-11-14 22:28:08 | INFO    |   #4  Linear Regression (29 Lags)      | Test RMSE:  168.73 MW | Test MAE:  128.33 MW | Test MAPE:  0.88% | R2: 0.9949
+2026-11-14 22:28:08 | INFO    |   #5  XGBoost Dense (24 Lags)          | Test RMSE:  179.22 MW | Test MAE:  132.37 MW | Test MAPE:  0.91% | R2: 0.9943
+2026-11-14 22:28:08 | INFO    |   #6  Random Forest (29 Lags)          | Test RMSE:  188.69 MW | Test MAE:  139.76 MW | Test MAPE:  0.95% | R2: 0.9937
+2026-11-14 22:28:08 | INFO    |   #7  Persistence Naive (lag_1)        | Test RMSE:  512.41 MW | Test MAE:  399.30 MW | Test MAPE:  2.74% | R2: 0.9534
+2026-11-14 22:28:08 | INFO    |   #8  Seasonal Naive 24h (lag_24)      | Test RMSE: 1235.36 MW | Test MAE:  945.01 MW | Test MAPE:  6.37% | R2: 0.7293
+2026-11-14 22:28:08 | INFO    |   #9  Weekly Naive 168h (lag_168)      | Test RMSE: 1953.74 MW | Test MAE: 1489.92 MW | Test MAPE:  9.89% | R2: 0.3229
+2026-11-14 22:28:08 | INFO    | ==========================================================================================
+2026-11-14 22:28:08 | INFO    | COMPLETE LAB 3 PIPELINE FINISHED SUCCESSFULLY IN 376.93 SECONDS!
+2026-11-14 22:28:08 | INFO    | ==========================================================================================

@@ -56,7 +56,23 @@ Lab3_TS/
 │   ├── models.py                                   # Các Class mô hình (XGBoostForecaster, RandomForest...)
 │   ├── evaluation.py                               # Độ đo đánh giá (MAE, RMSE, MAPE, Residual Diagnostics)
 │   ├── visualization.py                            # Các hàm trực quan hóa và tự động lưu biểu đồ
-│   └── train.py                                    # Script chạy toàn bộ pipeline tự động từ dòng lệnh (CLI)
+│   ├── train.py                                    # Script chạy toàn bộ pipeline tự động từ dòng lệnh (CLI)
+│   └── predict.py                                  # Script nạp model .joblib đã lưu để dự báo độc lập (Inference CLI)
+├── models/                                         # Trọng số mô hình đã đóng gói (.joblib) & Model Registry
+│   ├── linear_regression_29lags.joblib             # Linear Regression (29 Selective Lags)
+│   ├── random_forest_29lags.joblib                 # Random Forest (29 Selective Lags)
+│   ├── xgboost_dense_24lags.joblib                 # XGBoost Dense (24 Lags)
+│   ├── xgboost_baseline_29lags.joblib              # XGBoost Baseline (29 Selective Lags)
+│   ├── xgboost_enhanced_35features.joblib          # XGBoost Enhanced (29 Lags + 6 Rolling Features)
+│   ├── xgboost_tuned_29lags.joblib                 # XGBoost Tuned (TS-Split + Refit, Best Model)
+│   └── model_registry.json                         # Metadata, hyperparameters & test metrics của các model đã lưu
+├── logs/                                           # Hệ thống log thực nghiệm, bảng xếp hạng & kết quả dự báo
+│   ├── pipeline_training.log                       # Log chi tiết các đợt huấn luyện (ghi nối tiếp append mode)
+│   ├── model_comparison_summary.txt                # Báo cáo tổng hợp benchmark các đợt train (append mode)
+│   ├── metrics_leaderboard.csv                     # Bảng xếp hạng các mô hình dạng CSV chuẩn máy đọc
+│   ├── experiments_history.json                    # Lịch sử tham số & kết quả các đợt chạy dạng JSON
+│   ├── inference.log                               # Log kiểm tra artifact & chạy dự báo độc lập
+│   └── latest_predictions.csv                      # Kết quả dự báo tương lai & đối chiếu tập Test gần nhất
 └── docs/
     ├── README.md                                   # Trang chủ tài liệu & chỉ mục
     ├── 01_data_preparation_and_lag_features.md     # Tài liệu: Chuẩn bị dữ liệu & Kỹ thuật tạo Lag Features (Bước 1-2)
@@ -107,7 +123,15 @@ pip install numpy pandas matplotlib seaborn statsmodels scikit-learn xgboost
   ```bash
   jupyter notebook notebooks/main.ipynb
   ```
-* **Cách 2 — Chạy pipeline tự động qua CLI:**
+* **Cách 2 — Chạy pipeline huấn luyện tự động qua CLI:**
   ```bash
+  # Chạy đầy đủ toàn bộ Lab 3 (bao gồm TimeSeriesSplit CV, Multi-step & Lag sweep)
   python scripts/train.py
+
+  # Chạy nhanh chỉ train các mô hình cốt lõi + xuất artifacts
+  python scripts/train.py --quick
+  ```
+* **Cách 3 — Chạy suy luận & dự báo độc lập từ mô hình đã lưu:**
+  ```bash
+  python scripts/predict.py --horizon 24
   ```

@@ -66,6 +66,27 @@ class TimeSeriesFeatureBuilder:
         return df_res.dropna()
 
     @staticmethod
+    def create_lags_and_rolling_features(
+        series: pd.Series,
+        lags: List[int] = Config.SELECTIVE_LAGS,
+        windows: List[int] = Config.ROLLING_WINDOWS,
+    ) -> pd.DataFrame:
+        """
+        Build selective lag features combined with strictly shifted rolling statistics
+        (anti-leakage via series.shift(1)) aligned on the same valid rows.
+        """
+        df_feat = pd.DataFrame({"y": series})
+        for lag in lags:
+            df_feat[f"lag_{lag}"] = series.shift(lag)
+
+        shifted = series.shift(1)
+        for w in windows:
+            df_feat[f"rolling_mean_{w}"] = shifted.rolling(window=w).mean()
+            df_feat[f"rolling_std_{w}"] = shifted.rolling(window=w).std()
+
+        return df_feat.dropna()
+
+    @staticmethod
     def split_X_y(df_supervised: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
         """Tách DataFrame thành ma trận đặc trưng X và vector mục tiêu y."""
         X = df_supervised.drop(columns=["y"])
