@@ -1,2 +1,17 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environments & Editor
+.vscode/
+.idea/
+*.venv
+env/
+venv/
+
+# Large model artifacts
 models/*.joblib

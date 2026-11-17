@@ -68,11 +68,11 @@ class TimeSeriesFeatureBuilder:
     @staticmethod
     def create_lags_and_rolling_features(
         series: pd.Series,
-        lags: List[int] = Config.SELECTIVE_LAGS,
+        lags: List[int] = Config.BASE_LAGS,
         windows: List[int] = Config.ROLLING_WINDOWS,
     ) -> pd.DataFrame:
         """
-        Build selective lag features combined with strictly shifted rolling statistics
+        Build base 24 lag features combined with strictly shifted rolling statistics
         (anti-leakage via series.shift(1)) aligned on the same valid rows.
         """
         df_feat = pd.DataFrame({"y": series})

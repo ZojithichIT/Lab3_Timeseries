@@ -6,6 +6,7 @@ Module định nghĩa các Class đóng gói mô hình học máy cho bài toán
 """
 
 from typing import Dict, Any, List, Optional, Tuple
+import json
 import time
 import joblib
 from pathlib import Path
@@ -91,13 +92,38 @@ class XGBoostForecaster:
         return ser
 
     def save(self, filepath: Path):
-        """Lưu trọng số mô hình ra file."""
+        """Lưu trọng số mô hình ra file (.json hoặc .joblib)."""
+        filepath = Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
-        joblib.dump(self, filepath)
+        if filepath.suffix.lower() == ".json":
+            # Lưu trực tiếp cấu trúc cây XGBoost ra định dạng JSON chuẩn
+            self.model.save_model(str(filepath))
+        else:
+            joblib.dump(self, filepath)
 
     @staticmethod
     def load(filepath: Path) -> "XGBoostForecaster":
         """Nạp lại mô hình đã lưu."""
+        filepath = Path(filepath)
+        if filepath.suffix.lower() == ".json":
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            forecaster = XGBoostForecaster()
+            forecaster.model = xgb.XGBRegressor()
+            if isinstance(data, dict) and "trained_parameters" in data and "booster_raw" in data["trained_parameters"]:
+                booster = xgb.Booster()
+                raw_b = json.dumps(data["trained_parameters"]["booster_raw"]).encode("utf-8")
+                booster.load_model(bytearray(raw_b))
+                forecaster.model._Booster = booster
+                forecaster.feature_names_ = data.get("feature_engineering", {}).get("feature_names", [])
+            else:
+                forecaster.model.load_model(str(filepath))
+                try:
+                    forecaster.feature_names_ = forecaster.model.get_booster().feature_names or []
+                except Exception:
+                    forecaster.feature_names_ = []
+            forecaster.is_fitted = True
+            return forecaster
         return joblib.load(filepath)
 
 
@@ -116,22 +142,55 @@ class RandomForestForecaster:
         return self
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
-        return self.model.predict(X)
+        if hasattr(self.model, "estimators_") and len(self.model.estimators_) > 0:
+            cols = [c for c in self.feature_names_ if c in X.columns]
+            return self.model.predict(X[cols] if len(cols) == len(self.feature_names_) else X)
+        raise RuntimeError("Mô hình RandomForestForecaster nạp từ JSON không chứa cây nhị phân (chỉ chứa metadata & feature importances).")
 
     def get_feature_importance(self) -> pd.Series:
+        if hasattr(self, "feature_importances_"):
+            return pd.Series(self.feature_importances_, index=self.feature_names_).sort_values(ascending=False)
         return pd.Series(
             self.model.feature_importances_, 
             index=self.feature_names_
         ).sort_values(ascending=False)
 
     def save(self, filepath: Path) -> None:
-        """Save fitted Random Forest model to disk using joblib."""
+        """Lưu thông tin mô hình Random Forest ra disk (.json hoặc .joblib)."""
+        filepath = Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
-        joblib.dump(self, filepath)
+        if filepath.suffix.lower() == ".json":
+            rf_data = {
+                "model_type": "RandomForestRegressor",
+                "params": self.params,
+                "n_estimators": len(self.model.estimators_) if self.is_fitted else 0,
+                "n_features_in": int(self.model.n_features_in_) if self.is_fitted else 0,
+                "feature_names": self.feature_names_ if self.is_fitted else [],
+                "feature_importances": {
+                    col: float(val) for col, val in zip(self.feature_names_, self.model.feature_importances_)
+                } if self.is_fitted else {}
+            }
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(rf_data, f, indent=4, ensure_ascii=False)
+        else:
+            joblib.dump(self, filepath)
 
     @staticmethod
     def load(filepath: Path) -> "RandomForestForecaster":
-        """Load saved Random Forest model from disk."""
+        """Load Random Forest model từ disk."""
+        filepath = Path(filepath)
+        if filepath.suffix.lower() == ".json":
+            with open(filepath, "r", encoding="utf-8") as f:
+                rf_data = json.load(f)
+            params = rf_data.get("hyperparameters", rf_data.get("params", {}))
+            forecaster = RandomForestForecaster(params=params)
+            feat_info = rf_data.get("feature_engineering", {})
+            forecaster.feature_names_ = feat_info.get("feature_names", rf_data.get("feature_names", []))
+            forecaster.is_fitted = True
+            t_params = rf_data.get("trained_parameters", {})
+            imp_dict = t_params.get("feature_importances", rf_data.get("feature_importances", {}))
+            forecaster.feature_importances_ = np.array([imp_dict.get(col, 0.0) for col in forecaster.feature_names_])
+            return forecaster
         return joblib.load(filepath)
 
 
@@ -149,7 +208,11 @@ class LinearRegressionForecaster:
         return self
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
-        return self.model.predict(X)
+        cols = [c for c in self.feature_names_ if c in X.columns]
+        X_mat = X[cols].values if len(cols) == len(self.feature_names_) else X.values
+        if hasattr(self.model, "coef_"):
+            return np.dot(X_mat, self.model.coef_) + self.model.intercept_
+        return self.model.predict(X_mat)
 
     def get_coefficients(self) -> pd.Series:
         """Return signed linear regression coefficients sorted by absolute magnitude descending."""
@@ -168,14 +231,72 @@ class LinearRegressionForecaster:
         ).sort_values(ascending=False)
 
     def save(self, filepath: Path) -> None:
-        """Save fitted Linear Regression model to disk using joblib."""
+        """Lưu mô hình Linear Regression ra disk (.json hoặc .joblib)."""
+        filepath = Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
-        joblib.dump(self, filepath)
+        if filepath.suffix.lower() == ".json":
+            coef_dict = {
+                col: float(coef) for col, coef in zip(self.feature_names_, self.model.coef_)
+            } if self.is_fitted else {}
+            lr_data = {
+                "model_type": "LinearRegression",
+                "intercept": float(self.model.intercept_) if self.is_fitted else 0.0,
+                "coefficients": coef_dict,
+                "formula_preview": (
+                    f"y = {float(self.model.intercept_):.4f} + " +
+                    " + ".join([f"({float(coef):.4f} * {col})" for col, coef in list(coef_dict.items())[:5]]) +
+                    " ... (xem chi tiết trong coefficients)"
+                ) if self.is_fitted else ""
+            }
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(lr_data, f, indent=4, ensure_ascii=False)
+        else:
+            joblib.dump(self, filepath)
 
     @staticmethod
     def load(filepath: Path) -> "LinearRegressionForecaster":
-        """Load saved Linear Regression model from disk."""
+        """Load Linear Regression model từ disk."""
+        filepath = Path(filepath)
+        if filepath.suffix.lower() == ".json":
+            with open(filepath, "r", encoding="utf-8") as f:
+                lr_data = json.load(f)
+            forecaster = LinearRegressionForecaster()
+            t_params = lr_data.get("trained_parameters", {})
+            coef_dict = t_params.get("coefficients", lr_data.get("coefficients", {}))
+            intercept_val = t_params.get("intercept", lr_data.get("intercept", 0.0))
+            forecaster.feature_names_ = list(coef_dict.keys())
+            forecaster.model.intercept_ = float(intercept_val)
+            forecaster.model.coef_ = np.array(list(coef_dict.values()), dtype=float)
+            forecaster.model.feature_names_in_ = np.array(forecaster.feature_names_)
+            forecaster.model.n_features_in_ = len(forecaster.feature_names_)
+            forecaster.is_fitted = True
+            return forecaster
         return joblib.load(filepath)
+
+
+def load_model(filepath: Path) -> Any:
+    """Tự động nhận diện định dạng file (.json hoặc .joblib) và nạp đúng mô hình."""
+    filepath = Path(filepath)
+    if not filepath.exists():
+        raise FileNotFoundError(f"Không tìm thấy file mô hình: {filepath}")
+    if filepath.suffix.lower() == ".joblib":
+        return joblib.load(filepath)
+    if filepath.suffix.lower() == ".json":
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            return XGBoostForecaster.load(filepath)
+        
+        algo = data.get("algorithm", "") or data.get("model_type", "") if isinstance(data, dict) else ""
+        fname = filepath.name.lower()
+        if "linearregression" in algo.lower() or "linear" in fname:
+            return LinearRegressionForecaster.load(filepath)
+        elif "randomforest" in algo.lower() or "random_forest" in fname:
+            return RandomForestForecaster.load(filepath)
+        else:
+            return XGBoostForecaster.load(filepath)
+    raise ValueError(f"Định dạng file không được hỗ trợ: {filepath.suffix}")
 
 
 def fit_tuned_xgboost(
@@ -291,7 +412,7 @@ def run_multistep_experiment(
     Evaluate Direct Multi-Step (H independent XGBRegressor models) vs Recursive Multi-Step
     forecasting across independent 24-hour test cycles.
     """
-    lags = lags or Config.SELECTIVE_LAGS
+    lags = lags or Config.BASE_LAGS
     t_start = time.time()
 
     df_multi = pd.DataFrame({"y_step_1": series})

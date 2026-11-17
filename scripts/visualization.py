@@ -226,3 +226,42 @@ def plot_feature_importance(
     save_fig_helper(fig, save_path)
     return fig
 
+
+def plot_model_comparison_bar(
+    leaderboard_df: pd.DataFrame, 
+    save_path: Optional[Union[str, Path]] = None
+) -> plt.Figure:
+    """Vẽ biểu đồ cột so sánh RMSE và MAE của các mô hình trên tập Test."""
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), dpi=150)
+    
+    models = leaderboard_df["Model Name"]
+    rmse_vals = leaderboard_df["Test RMSE"]
+    mae_vals = leaderboard_df["Test MAE"]
+    
+    colors = ["#1976D2", "#388E3C", "#F57C00", "#7B1FA2", "#D32F2F"][:len(models)]
+    
+    # Biểu đồ RMSE
+    bars1 = ax1.bar(models, rmse_vals, color=colors, alpha=0.85, edgecolor="black")
+    ax1.set_title("So Sánh Test RMSE Giữa Các Mô Hình (Càng Thấp Càng Tốt)", fontsize=13, fontweight="bold")
+    ax1.set_ylabel("RMSE (MW)", fontsize=11)
+    ax1.grid(True, linestyle=":", alpha=0.6, axis="y")
+    ax1.tick_params(axis="x", rotation=20)
+    for bar in bars1:
+        yval = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width() / 2, yval + (yval * 0.01), f"{yval:.1f}", ha="center", va="bottom", fontsize=10, fontweight="bold")
+        
+    # Biểu đồ MAE
+    bars2 = ax2.bar(models, mae_vals, color=colors, alpha=0.85, edgecolor="black")
+    ax2.set_title("So Sánh Test MAE Giữa Các Mô Hình (Càng Thấp Càng Tốt)", fontsize=13, fontweight="bold")
+    ax2.set_ylabel("MAE (MW)", fontsize=11)
+    ax2.grid(True, linestyle=":", alpha=0.6, axis="y")
+    ax2.tick_params(axis="x", rotation=20)
+    for bar in bars2:
+        yval = bar.get_height()
+        ax2.text(bar.get_x() + bar.get_width() / 2, yval + (yval * 0.01), f"{yval:.1f}", ha="center", va="bottom", fontsize=10, fontweight="bold")
+        
+    plt.tight_layout()
+    save_fig_helper(fig, save_path)
+    return fig
+
+

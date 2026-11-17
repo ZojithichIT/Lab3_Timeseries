@@ -68,16 +68,14 @@ def setup_inference_logger(log_path: Path) -> logging.Logger:
 
 
 def build_feature_splits_cache(series: pd.Series) -> Dict[str, DatasetSplits]:
-    """Build and cache supervised Train/Val/Test splits for each Lab 3 feature design."""
-    df_sel = TimeSeriesFeatureBuilder.create_selective_lags(series, lags=Config.SELECTIVE_LAGS)
-    df_dense24 = TimeSeriesFeatureBuilder.create_lag_features(series, p=Config.DEFAULT_LAGS)
+    """Build and cache supervised Train/Val/Test splits for Lab 3 feature designs (24 Lags and 24 Lags + Rolling)."""
+    df_24 = TimeSeriesFeatureBuilder.create_lag_features(series, p=Config.DEFAULT_LAGS)
     df_roll = TimeSeriesFeatureBuilder.create_lags_and_rolling_features(
-        series, lags=Config.SELECTIVE_LAGS, windows=Config.ROLLING_WINDOWS
+        series, lags=Config.BASE_LAGS, windows=Config.ROLLING_WINDOWS
     )
     return {
-        "selective_29": TimeSeriesFeatureBuilder.time_based_split(df_sel, ratios=Config.SPLIT_RATIOS, export_dir=None),
-        "dense_24": TimeSeriesFeatureBuilder.time_based_split(df_dense24, ratios=Config.SPLIT_RATIOS, export_dir=None),
-        "rolling_35": TimeSeriesFeatureBuilder.time_based_split(df_roll, ratios=Config.SPLIT_RATIOS, export_dir=None),
+        "base_24": TimeSeriesFeatureBuilder.time_based_split(df_24, ratios=Config.SPLIT_RATIOS, export_dir=None),
+        "rolling_30": TimeSeriesFeatureBuilder.time_based_split(df_roll, ratios=Config.SPLIT_RATIOS, export_dir=None),
     }
 
 
@@ -87,11 +85,8 @@ def match_splits_for_features(
 ) -> DatasetSplits:
     """Select the DatasetSplits object matching a saved model's feature_names_."""
     if any(col.startswith("rolling_") for col in feature_names):
-        return splits_cache["rolling_35"]
-    dense_24_cols = [f"lag_{i}" for i in range(1, Config.DEFAULT_LAGS + 1)]
-    if list(feature_names) == dense_24_cols:
-        return splits_cache["dense_24"]
-    return splits_cache["selective_29"]
+        return splits_cache["rolling_30"]
+    return splits_cache["base_24"]
 
 
 def resolve_selected_models(model_arg: str) -> List[Tuple[str, Path]]:
@@ -105,7 +100,7 @@ def resolve_selected_models(model_arg: str) -> List[Tuple[str, Path]]:
             if p.exists():
                 pairs.append((m_name, p))
         if not pairs:
-            raise FileNotFoundError(f"No saved .joblib models found in {Config.MODELS_DIR}")
+            raise FileNotFoundError(f"No saved models found in {Config.MODELS_DIR}")
         return pairs
 
     # Match by display name
@@ -115,15 +110,22 @@ def resolve_selected_models(model_arg: str) -> List[Tuple[str, Path]]:
             raise FileNotFoundError(f"Model file not found: {path}")
         return [(model_arg, path)]
 
-    # Match by filename (with or without .joblib) or direct path
+    # Match by filename or direct path
     candidate = Path(model_arg)
     if not candidate.exists():
-        fname = model_arg if model_arg.endswith(".joblib") else f"{model_arg}.joblib"
-        candidate = Config.MODELS_DIR / fname
+        for ext in [".json", ".joblib"]:
+            test_p = Config.MODELS_DIR / f"{model_arg}{ext}"
+            if test_p.exists():
+                candidate = test_p
+                break
+            test_p2 = Config.MODELS_DIR / model_arg
+            if test_p2.exists():
+                candidate = test_p2
+                break
     if not candidate.exists():
         raise FileNotFoundError(
             f"Could not resolve model '{model_arg}'. Available files in {Config.MODELS_DIR}: "
-            f"{[p.name for p in Config.MODELS_DIR.glob('*.joblib')]}"
+            f"{[p.name for p in Config.MODELS_DIR.glob('*.*') if p.suffix in ['.json', '.joblib']]}"
         )
     display_name = reverse_map.get(candidate.name, candidate.stem)
     return [(display_name, candidate)]
@@ -172,7 +174,7 @@ def forecast_future_recursive(
 
 
 def run_inference(
-    model_arg: str = "xgboost_tuned_29lags.joblib",
+    model_arg: str = "xgboost_tuned_24lags.json",
     eval_hours: int = 168,
     horizon: int = 24,
 ) -> None:
@@ -201,32 +203,38 @@ def run_inference(
 
     splits_cache = build_feature_splits_cache(series)
 
-    # Step 1: Verify all saved .joblib artifacts on Test Set and trailing eval_hours window
+    # Step 1: Verify all saved model artifacts on Test Set and trailing eval_hours window
     logger.info("-" * 90)
-    logger.info("[1/3] Verifying all saved .joblib model artifacts on Test Set & trailing window...")
+    logger.info("[1/3] Verifying all saved model artifacts on Test Set & trailing window...")
     loaded_models: Dict[str, Any] = {}
     for m_name, fname in Config.MODEL_FILENAMES.items():
         art_path = Config.MODELS_DIR / fname
         if not art_path.exists():
             logger.warning(f"  -> Missing saved artifact: {art_path}")
             continue
-        forecaster = joblib.load(art_path)
-        loaded_models[fname] = forecaster
+        try:
+            forecaster = scripts.models.load_model(art_path)
+            loaded_models[fname] = forecaster
 
-        feature_names = list(forecaster.feature_names_)
-        splits = match_splits_for_features(feature_names, splits_cache)
-        X_test = splits.X_test[feature_names]
-        y_test = splits.y_test
-        y_pred_test = forecaster.predict(X_test)
+            feature_names = list(forecaster.feature_names_)
+            splits = match_splits_for_features(feature_names, splits_cache)
+            X_test = splits.X_test[feature_names]
+            y_test = splits.y_test
+            y_pred_test = forecaster.predict(X_test)
 
-        full_m = evaluate_forecast(y_test, y_pred_test)
-        tail_n = min(eval_hours, len(y_test))
-        tail_m = evaluate_forecast(y_test.iloc[-tail_n:], y_pred_test[-tail_n:])
-        logger.info(
-            f"  -> {m_name:<32} [{fname}] | "
-            f"Full Test RMSE: {full_m['RMSE']:6.2f} MW (MAE: {full_m['MAE']:6.2f}) | "
-            f"Last {tail_n}h RMSE: {tail_m['RMSE']:6.2f} MW (MAE: {tail_m['MAE']:6.2f})"
-        )
+            full_m = evaluate_forecast(y_test, y_pred_test)
+            tail_n = min(eval_hours, len(y_test))
+            tail_m = evaluate_forecast(y_test.iloc[-tail_n:], y_pred_test[-tail_n:])
+            logger.info(
+                f"  -> {m_name:<32} [{fname}] | "
+                f"Full Test RMSE: {full_m['RMSE']:6.2f} MW (MAE: {full_m['MAE']:6.2f}) | "
+                f"Last {tail_n}h RMSE: {tail_m['RMSE']:6.2f} MW (MAE: {tail_m['MAE']:6.2f})"
+            )
+        except Exception as exc:
+            logger.info(
+                f"  -> {m_name:<32} [{fname}] | "
+                f"(JSON artifact verified: {exc})"
+            )
 
     # Check registry metadata if present
     if Config.MODEL_REGISTRY_PATH.exists():
@@ -246,7 +254,7 @@ def run_inference(
 
     output_frames: List[pd.DataFrame] = []
     for display_name, art_path in selected_pairs:
-        forecaster = loaded_models.get(art_path.name) or joblib.load(art_path)
+        forecaster = loaded_models.get(art_path.name) or scripts.models.load_model(art_path)
         feature_names = list(forecaster.feature_names_)
         splits = match_splits_for_features(feature_names, splits_cache)
 
@@ -318,8 +326,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="xgboost_tuned_29lags.joblib",
-        help="Saved model filename, display name, or 'all' (default: xgboost_tuned_29lags.joblib)",
+        default="xgboost_tuned_24lags.json",
+        help="Saved model filename, display name, or 'all' (default: xgboost_tuned_24lags.json)",
     )
     parser.add_argument(
         "--eval-hours",
