@@ -1,0 +1,25 @@
+2026-11-14 22:46:24 | INFO    | ==========================================================================================
+2026-11-14 22:46:24 | INFO    | STARTING LAB 3 STANDALONE INFERENCE PIPELINE (model=xgboost_tuned_29lags.joblib, eval_hours=168, horizon=24h)
+2026-11-14 22:46:24 | INFO    | ==========================================================================================
+2026-11-14 22:46:24 | INFO    | Loaded cleaned AEP series: 121,296 hours (2004-10-01 01:00:00 -> 2018-08-03 00:00:00)
+2026-11-14 22:46:24 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:46:24 | INFO    | [1/3] Verifying all saved .joblib model artifacts on Test Set & trailing window...
+2026-11-14 22:46:25 | INFO    |   -> Linear Regression (29 Lags)      [linear_regression_29lags.joblib] | Full Test RMSE: 168.73 MW (MAE: 128.33) | Last 168h RMSE: 137.65 MW (MAE: 110.63)
+2026-11-14 22:46:25 | INFO    |   -> Random Forest (29 Lags)          [random_forest_29lags.joblib] | Full Test RMSE: 188.69 MW (MAE: 139.76) | Last 168h RMSE: 142.53 MW (MAE: 110.24)
+2026-11-14 22:46:25 | INFO    |   -> XGBoost Dense (24 Lags)          [xgboost_dense_24lags.joblib] | Full Test RMSE: 179.22 MW (MAE: 132.37) | Last 168h RMSE: 141.54 MW (MAE: 109.81)
+2026-11-14 22:46:25 | INFO    |   -> XGBoost Baseline (29 Lags)       [xgboost_baseline_29lags.joblib] | Full Test RMSE: 168.60 MW (MAE: 127.61) | Last 168h RMSE: 135.61 MW (MAE: 106.34)
+2026-11-14 22:46:25 | INFO    |   -> XGBoost Enhanced (+6 Rolling)    [xgboost_enhanced_35features.joblib] | Full Test RMSE: 166.18 MW (MAE: 126.10) | Last 168h RMSE: 131.70 MW (MAE: 107.12)
+2026-11-14 22:46:25 | INFO    |   -> XGBoost Tuned (TS-Split+Refit)   [xgboost_tuned_29lags.joblib] | Full Test RMSE: 163.25 MW (MAE: 123.28) | Last 168h RMSE: 129.98 MW (MAE: 101.78)
+2026-11-14 22:46:25 | INFO    | Model registry verified: 6 models registered (default: XGBoost Tuned (TS-Split+Refit))
+2026-11-14 22:46:25 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:46:25 | INFO    | [2/3] Generating 24h recursive forecasts beyond 2018-08-03 00:00:00 and 168h trailing comparison...
+2026-11-14 22:46:25 | INFO    |   -> XGBoost Tuned (TS-Split+Refit): Min Forecast = 12,145.40 MW, Max Forecast = 18,126.06 MW, Mean = 15,392.67 MW
+2026-11-14 22:46:25 | INFO    |      Step h=01 (2018-08-03 01:00:00) -> Predicted AEP_MW: 13,702.46 MW
+2026-11-14 22:46:25 | INFO    |      Step h=06 (2018-08-03 06:00:00) -> Predicted AEP_MW: 12,488.37 MW
+2026-11-14 22:46:25 | INFO    |      Step h=12 (2018-08-03 12:00:00) -> Predicted AEP_MW: 16,763.29 MW
+2026-11-14 22:46:25 | INFO    |      Step h=18 (2018-08-03 18:00:00) -> Predicted AEP_MW: 18,075.63 MW
+2026-11-14 22:46:25 | INFO    |      Step h=24 (2018-08-04 00:00:00) -> Predicted AEP_MW: 13,810.23 MW
+2026-11-14 22:46:25 | INFO    | ------------------------------------------------------------------------------------------
+2026-11-14 22:46:25 | INFO    | [3/3] Exporting predictions & trailing evaluation CSV...
+2026-11-14 22:46:25 | INFO    | -> Saved 192 rows (24 future forecasts, 168 trailing evals) to: E:\TimeSeries\Lab3_TS\logs\latest_predictions.csv
+2026-11-14 22:46:25 | INFO    | ==========================================================================================

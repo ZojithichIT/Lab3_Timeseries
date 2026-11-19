@@ -1,0 +1,474 @@
+===============================================================================================
+TIME SERIES FORECASTING - ML/AI MODEL TRAINING & BENCHMARK SUMMARY REPORT
+===============================================================================================
+Generated Timestamp : 2026-11-14 22:01:52
+Operating System    : Windows 11 (10.0.26300)
+Hardware Specs      : 12 Logical CPU Cores
+Software Stack      : Python 3.12.5 | NumPy 2.5.3 | Pandas 3.0.6 | Scikit-Learn 1.9.1 | XGBoost 3.4.1 | Statsmodels 0.15.0
+
+===============================================================================================
+1. DATASET & PREPROCESSING SUMMARY
+===============================================================================================
+- Source File       : E:\TimeSeries\Lab3_TS\data\raw\AEP_hourly.csv
+- Target Column     : AEP_MW (Frequency: 'h' - Hourly)
+- Time Span         : 2004-10-01 01:00:00 -> 2018-08-03 00:00:00
+- Total Cleaned Obs : 121,296 rows (Missing/NaN after cleaning: 0)
+- Mean +/- Std      : 15,499.15 MW +/- 2,591.38 MW
+- Min Load          : 9,581.00 MW (at 2016-10-02 05:00:00)
+- Percentiles       : Q25 = 13,629.00 MW | Median = 15,309.00 MW | Q75 = 17,200.00 MW
+- Max Load          : 25,695.00 MW (at 2008-10-20 14:00:00)
+
+===============================================================================================
+2. FEATURE ENGINEERING & TEMPORAL SPLIT CONFIGURATION
+===============================================================================================
+- Feature Design    : 24 Continuous Lag Features (lag_1 -> lag_24)
+- Dropped NaN Rows  : 24 initial rows removed due to lag shifting
+- Supervised Matrix : 121,272 samples x 24 features
+- Splitting Rule    : Strict Sequential Time-based Split (Shuffle = False, No Data Leakage)
+-----------------------------------------------------------------------------------------------
+Split Set       | Ratio   |    Samples | Start Timestamp     | End Timestamp       |  Mean (MW) |  Std (MW)
+-----------------------------------------------------------------------------------------------
+Train Set       |  75.0%  |     90,954 | 2004-10-02 01:00:00 | 2015-02-16 18:00:00 |  15,762.54 |  2,574.97
+Validation Set  |  12.5%  |     15,159 | 2015-02-16 19:00:00 | 2016-11-09 09:00:00 |  14,618.89 |  2,575.58
+Test Set        |  12.5%  |     15,159 | 2016-11-09 10:00:00 | 2018-08-03 00:00:00 |  14,801.07 |  2,373.28
+-----------------------------------------------------------------------------------------------
+
+===============================================================================================
+3. MODEL HYPERPARAMETERS CONFIGURATION
+===============================================================================================
+[Linear Regression]
+  - fit_intercept           : True
+  - positive                : False
+  - n_jobs                  : None
+  - n_features              : 24
+
+[Random Forest Regressor]
+  - n_estimators            : 300
+  - max_depth               : 15
+  - min_samples_split       : 5
+  - min_samples_leaf        : 2
+  - random_state            : 42
+  - n_jobs                  : -1
+
+[XGBoost Baseline]
+  - n_estimators            : 1000
+  - learning_rate           : 0.05
+  - max_depth               : 6
+  - subsample               : 0.8
+  - colsample_bytree        : 0.8
+  - objective               : reg:squarederror
+  - eval_metric             : rmse
+  - early_stopping_rounds   : 50
+  - random_state            : 42
+  - n_jobs                  : -1
+  - best_iteration_reached  : 1000
+  - best_validation_rmse    : 182.7339 MW
+
+===============================================================================================
+4. MODEL PERFORMANCE BENCHMARK TABLE (RANKED BY TEST RMSE)
+===============================================================================================
+Rank | Model Name                 | Train RMSE |   Val RMSE |  Test MAE | Test RMSE | Test MAPE |  Test R2 | Overfit Gap | Time (s)
+-----------------------------------------------------------------------------------------------
+#1   | XGBoost Baseline           |     143.20 |     182.73 |    132.37 |    179.22 |     0.91% |   0.9943 |      +36.02 |    7.66s
+#2   | Random Forest Regressor    |     114.47 |     199.11 |    140.90 |    192.27 |     0.96% |   0.9934 |      +77.80 |   70.23s
+#3   | Linear Regression          |     236.45 |     213.86 |    145.39 |    195.04 |     1.00% |   0.9932 |      -41.41 |    0.23s
+-----------------------------------------------------------------------------------------------
+* Note: Overfit Gap = Test RMSE - Train RMSE (MW). Lower Test RMSE indicates superior accuracy.
+
+===============================================================================================
+5. DETAILED METRICS BREAKDOWN BY SPLIT (TRAIN / VALIDATION / TEST)
+===============================================================================================
+Model: XGBoost Baseline (Training Duration: 7.66 seconds)
+  Split        |     MAE (MW) |    RMSE (MW) |   MAPE (%) |   R2 Score
+  ------------------------------------------------------------------
+  Train        |       108.47 |       143.20 |      0.70% |     0.9969
+  Validation   |       132.51 |       182.73 |      0.92% |     0.9950
+  Test         |       132.37 |       179.22 |      0.91% |     0.9943
+
+Model: Random Forest Regressor (Training Duration: 70.23 seconds)
+  Split        |     MAE (MW) |    RMSE (MW) |   MAPE (%) |   R2 Score
+  ------------------------------------------------------------------
+  Train        |        82.36 |       114.47 |      0.52% |     0.9980
+  Validation   |       143.31 |       199.11 |      0.99% |     0.9940
+  Test         |       140.90 |       192.27 |      0.96% |     0.9934
+
+Model: Linear Regression (Training Duration: 0.23 seconds)
+  Split        |     MAE (MW) |    RMSE (MW) |   MAPE (%) |   R2 Score
+  ------------------------------------------------------------------
+  Train        |       166.32 |       236.45 |      1.07% |     0.9916
+  Validation   |       153.96 |       213.86 |      1.07% |     0.9931
+  Test         |       145.39 |       195.04 |      1.00% |     0.9932
+
+===============================================================================================
+6. RESIDUAL DIAGNOSTICS ON TEST SET (e_t = y_true - y_pred)
+===============================================================================================
+Model Name                 | Mean Bias (MW) | Residual Std (MW) | Ljung-Box Stat (L=24) | Ljung-Box p-value | White Noise
+-----------------------------------------------------------------------------------------------
+XGBoost Baseline           |       -12.5781 |          178.7731 |               2153.55 |        0.0000e+00 | False
+Random Forest Regressor    |       -14.1186 |          191.7493 |               3533.58 |        0.0000e+00 | False
+Linear Regression          |        -8.3203 |          194.8595 |               4508.23 |        0.0000e+00 | False
+-----------------------------------------------------------------------------------------------
+
+===============================================================================================
+7. TOP 10 FEATURE IMPORTANCES / COEFFICIENTS PER MODEL
+===============================================================================================
+[XGBoost Baseline]
+  Rank   Feature            Importance Score       Relative Share (%)
+  --------------------------------------------------------------------
+  #1     lag_1              719454976.000000                   79.42%
+  #2     lag_2               82115304.000000                    9.06%
+  #3     lag_22              27467278.000000                    3.03%
+  #4     lag_23              21404208.000000                    2.36%
+  #5     lag_3               11033408.000000                    1.22%
+  #6     lag_21               9142386.000000                    1.01%
+  #7     lag_10               4111796.000000                    0.45%
+  #8     lag_4                3987319.250000                    0.44%
+  #9     lag_20               3595277.250000                    0.40%
+  #10    lag_9                3094049.750000                    0.34%
+
+[Random Forest Regressor]
+  Rank   Feature            Importance Score       Relative Share (%)
+  --------------------------------------------------------------------
+  #1     lag_1                      0.953770                   95.38%
+  #2     lag_2                      0.011514                    1.15%
+  #3     lag_22                     0.007968                    0.80%
+  #4     lag_3                      0.006050                    0.60%
+  #5     lag_23                     0.003905                    0.39%
+  #6     lag_21                     0.003811                    0.38%
+  #7     lag_4                      0.001884                    0.19%
+  #8     lag_10                     0.001748                    0.17%
+  #9     lag_20                     0.001411                    0.14%
+  #10    lag_9                      0.001184                    0.12%
+
+[Linear Regression]
+  Intercept (beta_0): +137.641304
+  Rank   Feature        Signed Coef (beta_k)   Abs Magnitude |beta_k|
+  --------------------------------------------------------------------
+  #1     lag_1                     +1.639954                 1.639954
+  #2     lag_2                     -0.887531                 0.887531
+  #3     lag_23                    +0.683695                 0.683695
+  #4     lag_24                    -0.490067                 0.490067
+  #5     lag_3                     +0.254046                 0.254046
+  #6     lag_22                    -0.190413                 0.190413
+  #7     lag_10                    +0.102208                 0.102208
+  #8     lag_15                    -0.090856                 0.090856
+  #9     lag_5                     -0.085787                 0.085787
+  #10    lag_11                    -0.054292                 0.054292
+
+===============================================================================================
+END OF BENCHMARK REPORT
+===============================================================================================
+
+
+==========================================================================================================
+LAB 3: TIME SERIES FORECASTING WITH MACHINE LEARNING - COMPLETE BENCHMARK REPORT
+==========================================================================================================
+Generated Timestamp : 2026-11-14 22:21:51
+Operating System    : Windows 11 (10.0.26300)
+Hardware Specs      : 12 Logical CPU Cores
+Software Stack      : Python 3.12.5 | NumPy 2.5.3 | Pandas 3.0.6 | Scikit-Learn 1.9.1 | XGBoost 3.4.1 | Statsmodels 0.15.0
+
+==========================================================================================================
+1. DATASET & PREPROCESSING SUMMARY (STEP 1)
+==========================================================================================================
+- Source File       : E:\TimeSeries\Lab3_TS\data\raw\AEP_hourly.csv
+- Target Column     : AEP_MW (Frequency: 'h' - Hourly)
+- Time Span         : 2004-10-01 01:00:00 -> 2018-08-03 00:00:00
+- Total Cleaned Obs : 121,296 rows (Missing/NaN after DST fix & interpolation: 0)
+- Mean +/- Std      : 15,499.15 MW +/- 2,591.38 MW
+- Min Load          : 9,581.00 MW (at 2016-10-02 05:00:00)
+- Percentiles       : Q25 = 13,629.00 MW | Median = 15,309.00 MW | Q75 = 17,200.00 MW
+- Max Load          : 25,695.00 MW (at 2008-10-20 14:00:00)
+
+==========================================================================================================
+2. FEATURE ENGINEERING & TEMPORAL SPLIT CONFIGURATION (STEPS 2-4)
+==========================================================================================================
+- Primary Design    : 29 Selective Lags -> lag_1..24 (daily), lag_48, lag_72, lag_167..169 (weekly)
+- Dropped NaN Rows  : 169 initial rows removed due to lag shifting (121,127 valid samples x 29 features)
+- Enhanced Design   : +6 Rolling Features (rolling_mean & rolling_std for w=6, 24, 168 with shift(1)) -> 35 features
+- Splitting Rule    : Strict Sequential Time-based Split (75.0% / 12.5% / 12.5%, Shuffle = False)
+----------------------------------------------------------------------------------------------------------
+Split Set (29 Lags)  | Ratio   |   Samples | Start Timestamp     | End Timestamp       |  Mean (MW) |  Std (MW)
+----------------------------------------------------------------------------------------------------------
+Train Set            |  75.0%  |    90,845 | 2004-10-08 02:00:00 | 2015-02-18 06:00:00 |  15,767.34 |  2,575.97
+Validation Set       |  12.5%  |    15,140 | 2015-02-18 07:00:00 | 2016-11-10 02:00:00 |  14,605.68 |  2,563.56
+Test Set             |  12.5%  |    15,142 | 2016-11-10 03:00:00 | 2018-08-03 00:00:00 |  14,801.76 |  2,374.38
+----------------------------------------------------------------------------------------------------------
+
+==========================================================================================================
+3. MODEL HYPERPARAMETERS CONFIGURATION
+==========================================================================================================
+[Linear Regression (29 Lags)]
+  - fit_intercept           : True
+  - positive                : False
+  - n_features              : 29
+
+[Random Forest (29 Lags)]
+  - n_estimators            : 200
+  - max_depth               : 16
+  - min_samples_split       : 5
+  - min_samples_leaf        : 2
+  - max_features            : 0.7
+  - random_state            : 42
+  - n_jobs                  : -1
+
+[XGBoost Dense (24 Lags)]
+  - n_estimators            : 1000
+  - learning_rate           : 0.05
+  - max_depth               : 6
+  - subsample               : 0.8
+  - colsample_bytree        : 0.8
+  - objective               : reg:squarederror
+  - eval_metric             : rmse
+  - early_stopping_rounds   : 50
+  - random_state            : 42
+  - n_jobs                  : -1
+  - best_iteration_reached  : 1000
+  - best_validation_rmse    : 182.7339 MW
+
+[XGBoost Baseline (29 Lags)]
+  - n_estimators            : 1000
+  - learning_rate           : 0.05
+  - max_depth               : 6
+  - subsample               : 0.8
+  - colsample_bytree        : 0.8
+  - objective               : reg:squarederror
+  - eval_metric             : rmse
+  - early_stopping_rounds   : 50
+  - random_state            : 42
+  - n_jobs                  : -1
+  - best_iteration_reached  : 1000
+  - best_validation_rmse    : 173.3865 MW
+
+[XGBoost Enhanced (+6 Rolling)]
+  - n_estimators            : 1000
+  - learning_rate           : 0.05
+  - max_depth               : 6
+  - subsample               : 0.8
+  - colsample_bytree        : 0.8
+  - objective               : reg:squarederror
+  - eval_metric             : rmse
+  - early_stopping_rounds   : 50
+  - random_state            : 42
+  - n_jobs                  : -1
+  - best_iteration_reached  : 1000
+  - best_validation_rmse    : 167.8438 MW
+
+[XGBoost Tuned (TS-Split+Refit)]
+  - n_estimators            : 1000
+  - learning_rate           : 0.05
+  - max_depth               : 6
+  - subsample               : 0.85
+  - colsample_bytree        : 0.85
+  - min_child_weight        : 3
+  - reg_alpha               : 0.1
+  - reg_lambda              : 1.5
+  - objective               : reg:squarederror
+  - eval_metric             : rmse
+  - random_state            : 42
+  - n_jobs                  : -1
+
+==========================================================================================================
+4. COMPLETE MODEL PERFORMANCE LEADERBOARD (RANKED BY TEST RMSE)
+==========================================================================================================
+Rank | Model Name                         | Features           | Train RMSE |  Val RMSE | Test MAE | Test RMSE |   MAPE |     R2 |    Time
+----------------------------------------------------------------------------------------------------------
+#1   | XGBoost Tuned (TS-Split+Refit)     | 29 Selective Lags  |     137.93 |    130.11 |   123.28 |    163.25 |  0.84% | 0.9953 |   7.73s
+#2   | XGBoost Enhanced (+6 Rolling)      | 29 Lags + 6 Roll   |     128.50 |    167.84 |   126.10 |    166.18 |  0.86% | 0.9951 |   7.74s
+#3   | XGBoost Baseline (29 Lags)         | 29 Selective Lags  |     132.19 |    173.39 |   127.61 |    168.60 |  0.87% | 0.9950 |   6.97s
+#4   | Linear Regression (29 Lags)        | 29 Selective Lags  |     192.55 |    179.16 |   128.33 |    168.73 |  0.88% | 0.9949 |   0.05s
+#5   | XGBoost Dense (24 Lags)            | 24 Dense Lags      |     143.20 |    182.73 |   132.37 |    179.22 |  0.91% | 0.9943 |   6.21s
+#6   | Random Forest (29 Lags)            | 29 Selective Lags  |     104.56 |    194.32 |   139.76 |    188.69 |  0.95% | 0.9937 |  37.38s
+#7   | Persistence Naive (lag_1)          | 1 Lag (lag_1)      |     575.35 |    552.85 |   399.30 |    512.41 |  2.74% | 0.9534 |   0.00s
+#8   | Seasonal Naive 24h (lag_24)        | 1 Lag (lag_24)     |    1324.52 |   1209.49 |   945.01 |   1235.36 |  6.37% | 0.7293 |   0.00s
+#9   | Weekly Naive 168h (lag_168)        | 1 Lag (lag_168)    |    1772.00 |   1763.60 |  1489.92 |   1953.74 |  9.89% | 0.3229 |   0.00s
+----------------------------------------------------------------------------------------------------------
+
+==========================================================================================================
+5. RESIDUAL DIAGNOSTICS ON TEST SET (e_t = y_true - y_pred)
+==========================================================================================================
+Model Name                         | Mean Bias (MW) | Residual Std (MW) | Ljung-Box Stat (L=24) | Ljung-Box p-value | White Noise
+----------------------------------------------------------------------------------------------------------
+XGBoost Tuned (TS-Split+Refit)     |        -4.4004 |          163.1942 |               2421.31 |        0.0000e+00 | False
+XGBoost Enhanced (+6 Rolling)      |        -6.3886 |          166.0525 |               2543.90 |        0.0000e+00 | False
+XGBoost Baseline (29 Lags)         |        -5.2385 |          168.5235 |               2837.06 |        0.0000e+00 | False
+Linear Regression (29 Lags)        |        -5.3685 |          168.6431 |               5665.36 |        0.0000e+00 | False
+XGBoost Dense (24 Lags)            |       -12.5781 |          178.7731 |               2153.55 |        0.0000e+00 | False
+Random Forest (29 Lags)            |       -12.9542 |          188.2442 |               5430.65 |        0.0000e+00 | False
+Persistence Naive (lag_1)          |        +0.1489 |          512.4149 |              64057.72 |        0.0000e+00 | False
+Seasonal Naive 24h (lag_24)        |        +3.1501 |         1235.3537 |             116085.18 |        0.0000e+00 | False
+Weekly Naive 168h (lag_168)        |       +22.2144 |         1953.6102 |             239352.84 |        0.0000e+00 | False
+----------------------------------------------------------------------------------------------------------
+
+==========================================================================================================
+6. TOP 10 FEATURE IMPORTANCES / COEFFICIENTS PER TRAINED ML MODEL (STEP 7)
+==========================================================================================================
+[XGBoost Tuned (TS-Split+Refit)]
+  Rank   Feature                Importance Score       Relative Share (%)
+  ------------------------------------------------------------------------
+  #1     lag_1                  745400896.000000                   46.01%
+  #2     lag_2                  459674016.000000                   28.37%
+  #3     lag_24                 139245760.000000                    8.59%
+  #4     lag_22                  71259344.000000                    4.40%
+  #5     lag_3                   60706588.000000                    3.75%
+  #6     lag_23                  37909804.000000                    2.34%
+  #7     lag_167                 31796620.000000                    1.96%
+  #8     lag_21                  14288309.000000                    0.88%
+  #9     lag_4                   10849359.000000                    0.67%
+  #10    lag_10                   6294090.000000                    0.39%
+
+[XGBoost Enhanced (+6 Rolling)]
+  Rank   Feature                Importance Score       Relative Share (%)
+  ------------------------------------------------------------------------
+  #1     lag_1                  748313600.000000                   56.21%
+  #2     lag_23                 146627280.000000                   11.01%
+  #3     lag_2                  104220160.000000                    7.83%
+  #4     lag_24                  97972496.000000                    7.36%
+  #5     lag_3                   77198264.000000                    5.80%
+  #6     lag_168                 39046604.000000                    2.93%
+  #7     lag_22                  29032774.000000                    2.18%
+  #8     lag_167                 16274020.000000                    1.22%
+  #9     lag_21                   9007036.000000                    0.68%
+  #10    rolling_mean_6           7856244.500000                    0.59%
+
+[XGBoost Baseline (29 Lags)]
+  Rank   Feature                Importance Score       Relative Share (%)
+  ------------------------------------------------------------------------
+  #1     lag_1                  497732512.000000                   41.87%
+  #2     lag_2                  339515936.000000                   28.56%
+  #3     lag_24                 106366232.000000                    8.95%
+  #4     lag_22                  53695148.000000                    4.52%
+  #5     lag_3                   46821624.000000                    3.94%
+  #6     lag_23                  42667464.000000                    3.59%
+  #7     lag_167                 29551278.000000                    2.49%
+  #8     lag_168                 15497586.000000                    1.30%
+  #9     lag_21                   9088140.000000                    0.76%
+  #10    lag_4                    7136716.000000                    0.60%
+
+[Linear Regression (29 Lags)]
+  Intercept (beta_0): +87.381871
+  Rank   Feature            Signed Coef (beta_k)   Abs Magnitude |beta_k|
+  ------------------------------------------------------------------------
+  #1     lag_1                         +1.346831                 1.346831
+  #2     lag_168                       +0.538520                 0.538520
+  #3     lag_169                       -0.500857                 0.500857
+  #4     lag_2                         -0.469900                 0.469900
+  #5     lag_23                        +0.363011                 0.363011
+  #6     lag_24                        -0.271185                 0.271185
+  #7     lag_3                         +0.127416                 0.127416
+  #8     lag_22                        -0.091063                 0.091063
+  #9     lag_10                        +0.049232                 0.049232
+  #10    lag_15                        -0.047325                 0.047325
+
+[XGBoost Dense (24 Lags)]
+  Rank   Feature                Importance Score       Relative Share (%)
+  ------------------------------------------------------------------------
+  #1     lag_1                  719454976.000000                   79.42%
+  #2     lag_2                   82115304.000000                    9.06%
+  #3     lag_22                  27467278.000000                    3.03%
+  #4     lag_23                  21404208.000000                    2.36%
+  #5     lag_3                   11033408.000000                    1.22%
+  #6     lag_21                   9142386.000000                    1.01%
+  #7     lag_10                   4111796.000000                    0.45%
+  #8     lag_4                    3987319.250000                    0.44%
+  #9     lag_20                   3595277.250000                    0.40%
+  #10    lag_9                    3094049.750000                    0.34%
+
+[Random Forest (29 Lags)]
+  Rank   Feature                Importance Score       Relative Share (%)
+  ------------------------------------------------------------------------
+  #1     lag_1                          0.690727                   69.07%
+  #2     lag_2                          0.199741                   19.97%
+  #3     lag_24                         0.042396                    4.24%
+  #4     lag_23                         0.021386                    2.14%
+  #5     lag_22                         0.011296                    1.13%
+  #6     lag_3                          0.007498                    0.75%
+  #7     lag_167                        0.005010                    0.50%
+  #8     lag_168                        0.004208                    0.42%
+  #9     lag_21                         0.003437                    0.34%
+  #10    lag_4                          0.002184                    0.22%
+
+==========================================================================================================
+7. ADVANCED EXERCISES RESULTS (ROLLING, MULTI-STEP, TIMESERIESSPLIT, RANDOM FOREST)
+==========================================================================================================
+[Advanced Ex 1] Rolling Mean & Rolling Std (window = 6, 24, 168 with shift(1)):
+  - Baseline (29 Lags)         : MAE = 127.61 MW | RMSE = 168.60 MW | MAPE = 0.87%
+  - Enhanced (29 Lags+6 Roll)  : MAE = 126.10 MW | RMSE = 166.18 MW | MAPE = 0.86%
+  - Rolling Feature Gain Shares:
+      * rolling_mean_6    : 0.590% of total Gain
+      * rolling_std_6     : 0.285% of total Gain
+      * rolling_mean_24   : 0.233% of total Gain
+      * rolling_std_24    : 0.087% of total Gain
+      * rolling_mean_168  : 0.049% of total Gain
+      * rolling_std_168   : 0.069% of total Gain
+
+[Advanced Ex 2] Multi-Step Forecasting (Horizon H = 24 hours across 630 independent 24h test cycles):
+  Horizon Step (h)   |   Direct RMSE (MW) |  Recursive RMSE (MW) |   Diff (Rec - Dir)
+  --------------------------------------------------------------------------------
+  h = 01h            |             207.65 |               207.65 |           +0.00 MW
+  h = 02h            |             302.04 |               332.75 |          +30.71 MW
+  h = 03h            |             422.75 |               472.70 |          +49.95 MW
+  h = 06h            |             784.76 |               903.08 |         +118.32 MW
+  h = 12h            |            1044.76 |              1211.71 |         +166.95 MW
+  h = 18h            |             968.17 |               984.82 |          +16.65 MW
+  h = 24h            |            1327.31 |              1189.79 |         -137.52 MW
+  --------------------------------------------------------------------------------
+  24h Average RMSE   |             891.44 |               955.64 |          +64.20 MW (6.72% better)
+
+[Advanced Ex 3] Hyperparameter Tuning via TimeSeriesSplit (5-Fold Expanding Window on Dev Set = 105,985 rows):
+  - Fold 1: Train = 17,665 (2004-10-08 02:00:00 -> 2006-10-14 02:00:00) | Val = 17,664 (2006-10-14 03:00:00 -> 2008-10-19 02:00:00)
+  - Fold 2: Train = 35,329 (2004-10-08 02:00:00 -> 2008-10-19 02:00:00) | Val = 17,664 (2008-10-19 03:00:00 -> 2010-10-25 02:00:00)
+  - Fold 3: Train = 52,993 (2004-10-08 02:00:00 -> 2010-10-25 02:00:00) | Val = 17,664 (2010-10-25 03:00:00 -> 2012-10-30 02:00:00)
+  - Fold 4: Train = 70,657 (2004-10-08 02:00:00 -> 2012-10-30 02:00:00) | Val = 17,664 (2012-10-30 03:00:00 -> 2014-11-05 02:00:00)
+  - Fold 5: Train = 88,321 (2004-10-08 02:00:00 -> 2014-11-05 02:00:00) | Val = 17,664 (2014-11-05 03:00:00 -> 2016-11-10 02:00:00)
+  --------------------------------------------------------------------------------------------------
+  Candidate Config               |  Fold 1 |  Fold 2 |  Fold 3 |  Fold 4 |  Fold 5 |     CV Mean +/- Std
+  --------------------------------------------------------------------------------------------------
+  Config 1 (Shallow, lr=0.10)    |  227.04 |  220.61 |  192.67 |  194.83 |  190.17 |   205.06 +/- 15.53
+  Config 2 (Shallow, lr=0.05)    |  227.46 |  222.65 |  195.98 |  197.75 |  193.44 |   207.46 +/- 14.51
+  Config 3 (Baseline, d=6)       |  220.46 |  207.99 |  179.28 |  179.46 |  174.91 |   192.42 +/- 18.31
+  Config 4 (Balanced, d=6, reg)  |  218.35 |  205.60 |  176.14 |  178.84 |  174.05 |   190.60 +/- 17.98
+  Config 5 (Deep, d=7, lr=0.04)  |  221.96 |  205.93 |  175.15 |  178.18 |  172.21 |   190.69 +/- 19.75
+  Config 6 (Deep, d=8, lr=0.03)  |  225.83 |  207.50 |  176.05 |  179.21 |  172.64 |   192.25 +/- 20.87
+  --------------------------------------------------------------------------------------------------
+  -> Best CV Config: Config 4 (Balanced, d=6, reg) (Mean CV RMSE = 190.60 MW) | Refit Test RMSE: 163.25 MW (MAE: 123.28 MW, MAPE: 0.84%)
+
+[Advanced Ex 4] Random Forest (Bagging) vs XGBoost (Boosting) & Peak Load Top 5% Analysis:
+  - Random Forest (200 trees, d=16) : Test RMSE = 188.69 MW | Peak Top 5% RMSE = 208.46 MW | Time = 37.38s
+  - XGBoost Baseline (1000, d=6)    : Test RMSE = 168.60 MW | Peak Top 5% RMSE = 209.43 MW | Time = 6.97s
+  - XGBoost Tuned (TS-Split+Refit)  : Test RMSE = 163.25 MW | Peak Top 5% RMSE = 206.82 MW
+  -> Speedup Factor: XGBoost Baseline trained 5.4x faster than Random Forest.
+
+==========================================================================================================
+8. DISCUSSION QUESTIONS EXPERIMENTS & SYNTHESIS (QUESTIONS 1-3)
+==========================================================================================================
+[Question 1] XGBoost vs Linear Regression (Linear AR vs Non-linear Gradient Boosting):
+  - Overall Test RMSE        : Linear Regression = 168.73 MW vs XGBoost Tuned = 163.25 MW (Delta = +5.48 MW)
+  - Morning Ramp (06h-09h)   : Linear Regression RMSE = 190.52 MW vs XGBoost Baseline RMSE = 189.35 MW vs XGBoost Tuned RMSE = 182.98 MW
+  -> Insight: Linear Regression captures first-order velocity (beta_lag_1 > 0, beta_lag_2 < 0) but suffers during non-linear phase transitions (06h-09h).
+
+[Question 2] Effect of Increasing Continuous Lag Order p (p = 1 .. 336 hours):
+  Lag Order (p)      | Lost Rows | Train RMSE |  Test RMSE | Overfit Gap |  Test MAE | Time (s)
+  -----------------------------------------------------------------------------------------
+  p =   1 dense        |         1 |     571.84 |     511.20 |      -60.64 |    399.90 |    0.57s
+  p =   3 dense        |         3 |     311.81 |     288.90 |      -22.91 |    216.07 |    1.53s
+  p =   6 dense        |         6 |     255.50 |     257.59 |       +2.09 |    188.84 |    1.62s
+  p =  12 dense        |        12 |     216.36 |     234.16 |      +17.80 |    169.99 |    2.05s
+  p =  24 dense        |        24 |     167.94 |     188.22 |      +20.28 |    139.87 |    3.21s
+  p =  48 dense        |        48 |     151.28 |     178.31 |      +27.03 |    134.56 |    5.67s
+  p =  72 dense        |        72 |     150.63 |     180.47 |      +29.83 |    136.39 |    7.96s
+  p = 168 dense        |       168 |     143.62 |     179.71 |      +36.08 |    136.79 |   18.11s
+  p = 336 dense        |       336 |     138.04 |     175.59 |      +37.55 |    134.74 |   38.88s
+  -----------------------------------------------------------------------------------------
+  29 Selective Lags  |       169 |     132.19 |     168.60 |      +36.41 |    127.61 |    6.97s
+  -> Insight: Increasing p reduces bias up to p=24..48, after which multicollinearity dilutes splits, increases overfitting gap & memory/compute O(N*p).
+
+[Question 3] When Is XGBoost More Suitable Than ARIMA / SARIMA?
+  - Choose XGBoost when: Large high-frequency series (N > 5,000), multiple nested seasonalities (24h + 168h + annual),
+    strong non-linear regime shifts, and exogenous features (weather, holidays) are available.
+  - Choose ARIMA/SARIMA when: Short univariate series (N < 500), low frequency (monthly/quarterly), linear trend
+    extrapolation beyond historical min/max range is required (trees cannot extrapolate beyond leaf bounds without differencing).
+
+==========================================================================================================
+END OF COMPLETE LAB 3 BENCHMARK REPORT
+==========================================================================================================
