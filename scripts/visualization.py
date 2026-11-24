@@ -226,3 +226,230 @@ def plot_feature_importance(
     save_fig_helper(fig, save_path)
     return fig
 
+
+def plot_tree_extrapolation_benchmark(
+    extrap_results: Dict[str, Any],
+    save_path: Optional[Union[str, Path]] = None,
+) -> plt.Figure:
+    """
+    Plot 4-panel diagnostic figure (300 DPI) demonstrating the Tree Extrapolation Limitation
+    and evaluating Differenced XGBoost, Detrended XGBoost, and Hybrid Linear + XGBoost.
+    """
+    exp1 = extrap_results["exp1_trend_stress"]
+    exp2 = extrap_results["exp2_peak_stress"]
+
+    fig, axes = plt.subplots(2, 2, figsize=(18, 12), dpi=300)
+    ax1, ax2, ax3, ax4 = axes.flatten()
+
+    # Panel A: Trend Extrapolation Stress-Test around global Test Peak
+    y1 = exp1["y_test"]
+    peak_pos1 = int(np.argmax(y1.values))
+    s1 = max(0, peak_pos1 - 120)
+    e1 = min(len(y1), peak_pos1 + 120)
+    sl1 = slice(s1, e1)
+
+    ax1.plot(y1.index[sl1], y1.values[sl1], label="Thực tế (Actual Trend Peak)", color="#0f172a", linewidth=2.0, zorder=5)
+    ax1.axhline(exp1["train_max"], color="#b42318", linestyle="--", linewidth=1.6, label=f"Trần Train max(y_train) = {exp1['train_max']:,.0f} MW")
+    style_map = [
+        ("Random Forest (Standard)", "#f97316", ":", 1.6),
+        ("XGBoost (Standard)", "#dc2626", "-.", 1.8),
+        ("Detrended XGBoost", "#7c3aed", "--", 1.7),
+        ("Differenced XGBoost (Delta y)", "#0f766e", "--", 1.9),
+        ("Hybrid Linear + XGBoost", "#1f4e79", "-", 1.9),
+    ]
+    for m_name, col, ls, lw in style_map:
+        if m_name in exp1["predictions"]:
+            pred_s = exp1["predictions"][m_name].iloc[sl1]
+            ax1.plot(pred_s.index, pred_s.values, label=m_name, color=col, linestyle=ls, linewidth=lw, alpha=0.92)
+    ax1.fill_between(y1.index[sl1], exp1["train_max"], y1.values[sl1], where=(y1.values[sl1] > exp1["train_max"]),
+                     color="#fee2e2", alpha=0.45, label="Vùng vượt đỉnh lịch sử")
+    ax1.set_title("(A) Stress-Test 1: Xu Hướng Tăng (+0,25 MW/h) Vượt Trần +6.140 MW", fontsize=12, fontweight="bold")
+    ax1.set_ylabel("Phụ tải (MW)", fontsize=10.5)
+    ax1.legend(loc="lower left", fontsize=8.3, ncol=2, frameon=True, facecolor="white", framealpha=0.92)
+    ax1.tick_params(axis="x", rotation=20)
+    ax1.grid(True, linestyle=":", alpha=0.6)
+
+    # Panel B: Real AEP Unseen Extreme Peak Regime (Train <= 19,500 MW)
+    y2 = exp2["y_test"]
+    peak_pos2 = int(np.argmax(y2.values))
+    s2 = max(0, peak_pos2 - 96)
+    e2 = min(len(y2), peak_pos2 + 96)
+    sl2 = slice(s2, e2)
+
+    ax2.plot(y2.index[sl2], y2.values[sl2], label="Thực tế AEP (Peak 22.759 MW)", color="#0f172a", linewidth=2.0, zorder=5)
+    ax2.axhline(exp2["train_max"], color="#b42318", linestyle="--", linewidth=1.6, label=f"Trần Train = {exp2['train_max']:,.0f} MW")
+    for m_name, col, ls, lw in style_map[1:]:
+        if m_name in exp2["predictions"]:
+            pred_s = exp2["predictions"][m_name].iloc[sl2]
+            ax2.plot(pred_s.index, pred_s.values, label=m_name, color=col, linestyle=ls, linewidth=lw, alpha=0.92)
+    ax2.fill_between(y2.index[sl2], exp2["train_max"], y2.values[sl2], where=(y2.values[sl2] > exp2["train_max"]),
+                     color="#ffedd5", alpha=0.55, label="Vùng đỉnh cực đoan chưa thấy")
+    ax2.set_title("(B) Stress-Test 2: Dữ Liệu Thật AEP (Train ≤ 19.500 MW, Test Tới 22.759 MW)", fontsize=12, fontweight="bold")
+    ax2.set_ylabel("Phụ tải (MW)", fontsize=10.5)
+    ax2.legend(loc="lower left", fontsize=8.3, ncol=2, frameon=True, facecolor="white", framealpha=0.92)
+    ax2.tick_params(axis="x", rotation=20)
+    ax2.grid(True, linestyle=":", alpha=0.6)
+
+    # Panel C: Out-of-Bounds Parity Scatter in Stress-Test 1
+    oob_mask1 = exp1["oob_mask"]
+    y_oob = exp1["y_test"].values[oob_mask1]
+    ax3.scatter(y_oob, exp1["predictions"]["XGBoost (Standard)"].values[oob_mask1],
+                s=10, alpha=0.45, color="#dc2626", label="XGBoost Standard (Bị cắt phẳng ngọn)")
+    ax3.scatter(y_oob, exp1["predictions"]["Differenced XGBoost (Delta y)"].values[oob_mask1],
+                s=10, alpha=0.45, color="#0f766e", label="Differenced XGBoost (Δy)")
+    ax3.scatter(y_oob, exp1["predictions"]["Hybrid Linear + XGBoost"].values[oob_mask1],
+                s=10, alpha=0.45, color="#1f4e79", label="Hybrid Linear + XGBoost")
+    lo, hi = float(y_oob.min()), float(y_oob.max())
+    ax3.plot([lo, hi], [lo, hi], "k--", linewidth=1.4, label="Đường lý tưởng y_pred = y_true")
+    ax3.axhline(exp1["train_max"], color="#b42318", linestyle=":", linewidth=1.3, label=f"Trần max(y_train) = {exp1['train_max']:,.0f}")
+    ax3.set_title(f"(C) Phân Tán Ngoại Suy Trên {exp1['oob_count']:,} Giờ Vượt Trần (Exp 1)", fontsize=12, fontweight="bold")
+    ax3.set_xlabel("Phụ tải thực tế y_true (MW)", fontsize=10.5)
+    ax3.set_ylabel("Phụ tải dự báo y_pred (MW)", fontsize=10.5)
+    ax3.legend(loc="upper left", fontsize=8.5, frameon=True, facecolor="white")
+    ax3.grid(True, linestyle=":", alpha=0.6)
+
+    # Panel D: Out-of-Bounds RMSE Bar Chart across Exp 1 & Exp 2
+    df_m1 = pd.DataFrame(exp1["metrics"]).set_index("model")
+    df_m2 = pd.DataFrame(exp2["metrics"]).set_index("model")
+    models_order = [
+        "Random Forest (Standard)",
+        "XGBoost (Standard)",
+        "Detrended XGBoost",
+        "Differenced XGBoost (Delta y)",
+        "Hybrid Linear + XGBoost",
+    ]
+    short_labels = ["Random\nForest", "XGBoost\nStandard", "Detrended\nXGBoost", "Differenced\nXGBoost (Δy)", "Hybrid Linear\n+ XGBoost"]
+    x = np.arange(len(models_order))
+    w = 0.36
+    vals1 = [df_m1.loc[m, "oob_rmse"] for m in models_order]
+    vals2 = [df_m2.loc[m, "oob_rmse"] for m in models_order]
+
+    b1 = ax4.bar(x - w / 2, vals1, width=w, color="#1f4e79", label="Exp 1: Trend Growth Vượt Trần", edgecolor="black", linewidth=0.5)
+    b2 = ax4.bar(x + w / 2, vals2, width=w, color="#c2610c", label="Exp 2: Đỉnh Cực Đoan Thật AEP", edgecolor="black", linewidth=0.5)
+    for bar in list(b1) + list(b2):
+        h = bar.get_height()
+        ax4.text(bar.get_x() + bar.get_width() / 2, h + max(max(vals1), max(vals2)) * 0.015,
+                 f"{h:,.0f}", ha="center", va="bottom", fontsize=8.5, fontweight="bold")
+    ax4.set_xticks(x)
+    ax4.set_xticklabels(short_labels, fontsize=9.5)
+    ax4.set_ylim(0, max(max(vals1), max(vals2)) * 1.18)
+    ax4.set_title("(D) Sai Số RMSE Trên Vùng Vượt Đỉnh Lịch Sử (Thấp Hơn = Tốt Hơn)", fontsize=12, fontweight="bold")
+    ax4.set_ylabel("Out-of-Bounds RMSE (MW)", fontsize=10.5)
+    ax4.legend(loc="upper right", fontsize=9, frameon=True, facecolor="white")
+    ax4.grid(True, linestyle=":", alpha=0.6, axis="y")
+
+    plt.suptitle("Phân Tích Giới Hạn Ngoại Suy Của Mô Hình Cây & 3 Phương Pháp Khắc Phục Vượt Đỉnh Lịch Sử", fontsize=14.5, fontweight="bold", y=0.995)
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
+    save_fig_helper(fig, save_path)
+    return fig
+
+
+def plot_calendar_and_hybrid_ablation(
+    extrap_results: Dict[str, Any],
+    save_path: Optional[Union[str, Path]] = None,
+) -> plt.Figure:
+    """
+    Plot 4-panel figure (300 DPI) showing Full AEP Test improvements from Hybrid Linear + XGBoost
+    and Calendar Features (hourly ramp, residual decomposition, and feature importance).
+    """
+    exp3 = extrap_results["exp3_full_aep"]
+    df_rows = pd.DataFrame(exp3["rows"]).sort_values("test_rmse", ascending=False)
+
+    fig, axes = plt.subplots(2, 2, figsize=(18, 12), dpi=300)
+    ax1, ax2, ax3, ax4 = axes.flatten()
+
+    # Panel A: Full Test Set RMSE Horizontal Bar Chart
+    colors_a = []
+    for m in df_rows["model"]:
+        if "Hybrid" in m:
+            colors_a.append("#1f4e79")
+        elif "Calendar" in m and "XGBoost" in m:
+            colors_a.append("#2f7d4f")
+        elif "Differenced" in m:
+            colors_a.append("#0f766e")
+        elif "Linear" in m:
+            colors_a.append("#64748b")
+        else:
+            colors_a.append("#c2610c")
+
+    bars_a = ax1.barh(df_rows["model"], df_rows["test_rmse"], color=colors_a, alpha=0.9, edgecolor="black", linewidth=0.5)
+    for bar, (_, row) in zip(bars_a, df_rows.iterrows()):
+        w = bar.get_width()
+        ax1.text(w + 1.2, bar.get_y() + bar.get_height() / 2,
+                 f"{w:.2f} MW (MAE {row['test_mae']:.1f})", va="center", ha="left", fontsize=8.5, fontweight="bold")
+    ax1.set_xlim(0, df_rows["test_rmse"].max() * 1.28)
+    ax1.set_title("(A) Bảng Xếp Hạng Test RMSE Trên Toàn Tập AEP (15.142 Giờ)", fontsize=12, fontweight="bold")
+    ax1.set_xlabel("Test RMSE (MW)", fontsize=10.5)
+    ax1.grid(True, linestyle=":", alpha=0.6, axis="x")
+
+    # Panel B: Hourly RMSE Profile 00h..23h
+    h_map = exp3["hourly_rmse"]
+    hours = list(range(24))
+    line_specs = [
+        ("Linear Regression (29 Lags)", "#0f766e", "--", 1.8),
+        ("XGBoost Baseline (29 Lags)", "#c2610c", "-", 2.0),
+        ("XGBoost + Calendar (35 Features)", "#2f7d4f", "-", 2.1),
+        ("Hybrid Linear + XGBoost + Calendar (Refit)", "#1f4e79", "-", 2.4),
+    ]
+    for m_name, col, ls, lw in line_specs:
+        if m_name in h_map:
+            ax2.plot(hours, h_map[m_name], label=m_name, color=col, linestyle=ls, linewidth=lw, marker="o", markersize=3.5)
+    ax2.axvspan(6, 9, color="#ffedd5", alpha=0.5, label="Khung tăng tải sáng (06h–09h)")
+    ax2.axvspan(18, 21, color="#e3edf7", alpha=0.5, label="Khung đỉnh/giảm tối (18h–21h)")
+    ax2.set_xticks(range(0, 24, 2))
+    ax2.set_xticklabels([f"{h:02d}h" for h in range(0, 24, 2)])
+    ax2.set_title("(B) Sai Số RMSE Theo Khung Giờ: Calendar + Hybrid Khắc Phục Chuyển Pha", fontsize=12, fontweight="bold")
+    ax2.set_xlabel("Giờ trong ngày", fontsize=10.5)
+    ax2.set_ylabel("Hourly RMSE (MW)", fontsize=10.5)
+    ax2.legend(loc="upper left", fontsize=8.3, frameon=True, facecolor="white")
+    ax2.grid(True, linestyle=":", alpha=0.6)
+
+    # Panel C: Hybrid Decomposition over 72h Test Window
+    comp = exp3["hybrid_components"]
+    sl_72 = slice(0, 72)
+    idx72 = comp["y_true"].index[sl_72]
+    y_t72 = comp["y_true"].values[sl_72]
+    y_l72 = comp["y_linear"].values[sl_72]
+    y_h72 = comp["y_total"].values[sl_72]
+    e_x72 = comp["e_xgb"].values[sl_72]
+
+    ax3.plot(idx72, y_t72, label="Thực tế AEP_MW", color="#0f172a", linewidth=2.0)
+    ax3.plot(idx72, y_l72, label="Tầng 1: Linear AR Backbone (ŷ_linear)", color="#0f766e", linestyle="--", linewidth=1.6)
+    ax3.plot(idx72, y_h72, label="Tầng 1+2: Hybrid Total (ŷ_linear + ê_xgb)", color="#1f4e79", linestyle="-.", linewidth=1.8)
+    ax3_r = ax3.twinx()
+    ax3_r.bar(idx72, e_x72, width=0.028, color=np.where(e_x72 >= 0, "#2f7d4f", "#dc2626"), alpha=0.35, label="Tầng 2: Hiệu chỉnh phi tuyến ê_xgb (trục phải)")
+    ax3_r.set_ylabel("Phần hiệu chỉnh XGBoost ê_xgb (MW)", fontsize=9.5, color="#475569")
+    ax3_r.set_ylim(-900, 900)
+    ax3.set_title("(C) Giải Phẫu Mô Hình Lai Hybrid (Linear Backbone + XGBoost Residual, 72h)", fontsize=12, fontweight="bold")
+    ax3.set_ylabel("Phụ tải (MW)", fontsize=10.5)
+    ax3.tick_params(axis="x", rotation=20)
+    lines1, labels1 = ax3.get_legend_handles_labels()
+    lines2, labels2 = ax3_r.get_legend_handles_labels()
+    ax3.legend(lines1 + lines2, labels1 + labels2, loc="upper left", fontsize=8.0, frameon=True, facecolor="white")
+    ax3.grid(True, linestyle=":", alpha=0.6)
+
+    # Panel D: Top 12 Feature Importance (Gain Share %) of XGBoost + Calendar
+    imp_cal = exp3["cal_xgb_importance"]
+    imp_pct = (imp_cal / imp_cal.sum() * 100.0).head(12).sort_values(ascending=True)
+    bar_cols = ["#2f7d4f" if f in Config.CALENDAR_COLS else "#1f4e79" for f in imp_pct.index]
+    bars_d = ax4.barh(imp_pct.index, imp_pct.values, color=bar_cols, alpha=0.9, edgecolor="black", linewidth=0.5)
+    for bar in bars_d:
+        w = bar.get_width()
+        ax4.text(w + imp_pct.max() * 0.015, bar.get_y() + bar.get_height() / 2,
+                 f"{w:.2f}%", va="center", ha="left", fontsize=8.8, fontweight="bold")
+    ax4.set_xlim(0, imp_pct.max() * 1.18)
+    ax4.set_title("(D) Top 12 Đặc Trưng Quan Trọng Nhất (XGBoost + 6 Calendar, Gain %)", fontsize=12, fontweight="bold")
+    ax4.set_xlabel("Tỷ trọng Gain (%)", fontsize=10.5)
+    from matplotlib.patches import Patch
+    ax4.legend(handles=[
+        Patch(facecolor="#2f7d4f", edgecolor="black", label="Đặc trưng Lịch (Calendar)"),
+        Patch(facecolor="#1f4e79", edgecolor="black", label="Đặc trưng Trễ (Lags)"),
+    ], loc="lower right", fontsize=9, frameon=True, facecolor="white")
+    ax4.grid(True, linestyle=":", alpha=0.6, axis="x")
+
+    plt.suptitle("Cải Thiện Dự Báo Với Hybrid Linear + XGBoost & Đặc Trưng Lịch (Calendar Features)", fontsize=14.5, fontweight="bold", y=0.995)
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
+    save_fig_helper(fig, save_path)
+    return fig
+
+
