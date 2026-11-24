@@ -1,2 +1,7 @@
+# Ignore large Random Forest model (>100MB GitHub limit)
+models/random_forest_*.joblib
 
-models/*.joblib
+# Python cache & Jupyter checkpoints
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/

@@ -24,6 +24,7 @@ class Config:
     MODEL_REGISTRY_PATH = MODELS_DIR / "model_registry.json"
     INFERENCE_LOG_PATH = LOGS_DIR / "inference.log"
     PREDICTIONS_CSV_PATH = LOGS_DIR / "latest_predictions.csv"
+    SUPPLEMENTARY_JSON_PATH = LOGS_DIR / "supplementary_extrapolation_results.json"
 
     MODEL_FILENAMES = {
         "Linear Regression (29 Lags)": "linear_regression_29lags.joblib",
@@ -32,6 +33,10 @@ class Config:
         "XGBoost Baseline (29 Lags)": "xgboost_baseline_29lags.joblib",
         "XGBoost Enhanced (+6 Rolling)": "xgboost_enhanced_35features.joblib",
         "XGBoost Tuned (TS-Split+Refit)": "xgboost_tuned_29lags.joblib",
+        "Differenced XGBoost (29 Lags)": "xgboost_differenced_29lags.joblib",
+        "Hybrid Linear + XGBoost (29 Lags)": "hybrid_linear_xgboost_29lags.joblib",
+        "XGBoost + Calendar (35 Features)": "xgboost_calendar_35features.joblib",
+        "Hybrid Linear + XGBoost + Calendar (35 Features)": "hybrid_linear_xgboost_calendar_35features.joblib",
     }
 
     # 2. Thuộc tính chuỗi thời gian
@@ -41,6 +46,7 @@ class Config:
     DEFAULT_LAGS = 24  # Số bậc trễ cơ sở cho chu kỳ ngày (24 giờ)
     SELECTIVE_LAGS = list(range(1, 25)) + [48, 72, 167, 168, 169]
     ROLLING_WINDOWS = [6, 24, 168]
+    CALENDAR_COLS = ["hour", "dayofweek", "month", "is_weekend", "hour_sin", "hour_cos"]
     MULTISTEP_HORIZON = 24
     LAG_SENSITIVITY_LIST = [1, 3, 6, 12, 24, 48, 72, 168, 336]
 

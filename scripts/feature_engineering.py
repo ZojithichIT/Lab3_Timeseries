@@ -8,6 +8,7 @@ Module thực hiện kỹ thuật Feature Engineering cho chuỗi thời gian:
 
 from pathlib import Path
 from typing import Dict, List, Tuple, Union, NamedTuple, Optional
+import numpy as np
 import pandas as pd
 from .config import Config
 
@@ -85,6 +86,37 @@ class TimeSeriesFeatureBuilder:
             df_feat[f"rolling_std_{w}"] = shifted.rolling(window=w).std()
 
         return df_feat.dropna()
+
+    @staticmethod
+    def add_calendar_features(df_supervised: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add deterministic calendar and cyclical time features derived from DatetimeIndex:
+        hour, dayofweek, month, is_weekend, hour_sin, hour_cos.
+        """
+        if not isinstance(df_supervised.index, pd.DatetimeIndex):
+            raise TypeError("DataFrame index must be a DatetimeIndex to extract calendar features.")
+
+        df_cal = df_supervised.copy()
+        idx = df_cal.index
+        hours = idx.hour.astype(float)
+        df_cal["hour"] = idx.hour.astype(int)
+        df_cal["dayofweek"] = idx.dayofweek.astype(int)
+        df_cal["month"] = idx.month.astype(int)
+        df_cal["is_weekend"] = (idx.dayofweek >= 5).astype(int)
+        df_cal["hour_sin"] = np.sin(2.0 * np.pi * hours / 24.0)
+        df_cal["hour_cos"] = np.cos(2.0 * np.pi * hours / 24.0)
+        return df_cal
+
+    @staticmethod
+    def create_lags_and_calendar_features(
+        series: pd.Series,
+        lags: List[int] = Config.SELECTIVE_LAGS,
+    ) -> pd.DataFrame:
+        """
+        Build selective lag features combined with deterministic calendar and cyclical features.
+        """
+        df_lags = TimeSeriesFeatureBuilder.create_selective_lags(series, lags=lags)
+        return TimeSeriesFeatureBuilder.add_calendar_features(df_lags)
 
     @staticmethod
     def split_X_y(df_supervised: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
