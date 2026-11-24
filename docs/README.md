@@ -13,9 +13,9 @@
 
 | Thuộc tính | Chi tiết |
 |---|---|
-| **Notebook chính** | [`notebooks/main.ipynb`](../notebooks/main.ipynb) (59 cells — Đầy đủ 7 bước cơ bản, 4 bài nâng cao & 3 câu thảo luận) |
+| **Notebook chính** | [`notebooks/main.ipynb`](../notebooks/main.ipynb) (66 cells — Đầy đủ 7 bước cơ bản, 4 bài nâng cao, 3 câu thảo luận & Phần Bổ Sung) |
 | **Dữ liệu chính (Dataset)** | [Kaggle: Hourly Energy Consumption (AEP_hourly.csv)](https://www.kaggle.com/datasets/robikscube/hourly-energy-consumption?select=AEP_hourly.csv) (Lưu tại [`data/raw/AEP_hourly.csv`](../data/raw/AEP_hourly.csv) — $121.296$ giờ liên tục, $13,8$ năm) |
-| **Mô hình cốt lõi** | `XGBoost Regressor` (Baseline & Tuned), `Random Forest Regressor`, `Linear Regression` |
+| **Mô hình cốt lõi** | `XGBoost Regressor` (Baseline & Tuned), `Hybrid Linear + XGBoost`, `Differenced/Detrended XGBoost`, `Random Forest`, `Linear Regression` |
 | **Kỹ thuật thẩm định** | Time-based Train/Val/Test Split ($75\% / 12,5\% / 12,5\%$), `TimeSeriesSplit` ($5$ Folds Expanding Window) |
 | **Độ đo đánh giá** | MAE ($\text{MW}$), RMSE ($\text{MW}$), MAPE ($\%$), $R^2$ Score |
 
@@ -30,9 +30,9 @@ Dự án này tập trung vào phương pháp **Machine Learning ứng dụng ch
 Mục tiêu chính bao gồm:
 * **Feature Engineering cho Time Series:** Tạo các đặc trưng trễ đa chu kỳ (`29 Selective Lags`: `lag_1..24`, `lag_48`, `lag_72`, `lag_167..169`) và các đặc trưng thống kê trượt (`Rolling Mean`, `Rolling Std` với `window = 6, 24, 168`).
 * **Phân chia dữ liệu theo thời gian (Time-based Splitting):** Đảm bảo tính toàn vẹn nhân quả thời gian, tuyệt đối không xáo trộn (shuffle) tránh rò rỉ dữ liệu từ tương lai (Data Leakage).
-* **Mô hình hóa với Gradient Boosting (XGBoost):** Huấn luyện mô hình `XGBRegressor`, tinh chỉnh siêu tham số bằng `TimeSeriesSplit` (5 Folds) và đạt kỷ lục dự báo trên tập Test (**$\text{MAE} = 123,28\text{ MW}$, $\text{RMSE} = 163,25\text{ MW}$, $\text{MAPE} = 0,84\%$, $R^2 = 0,9953$**).
+* **Mô hình hóa với Gradient Boosting (XGBoost):** Huấn luyện mô hình `XGBRegressor`, tinh chỉnh siêu tham số bằng `TimeSeriesSplit` (5 Folds) đạt $\text{MAE} = 123,28\text{ MW}$, $\text{RMSE} = 163,25\text{ MW}$, $\text{MAPE} = 0,84\%$ trên bộ lag chuẩn, và nâng cấp kỷ lục mới bằng kiến trúc lai **`Hybrid Linear + XGBoost + Calendar (Refit)`** xuống còn **$\text{MAE} = 95,44\text{ MW}$, $\text{RMSE} = 126,64\text{ MW}$, $\text{MAPE} = 0,65\%$, $R^2 = 0,9972$**.
 * **Đánh giá & Diễn giải mô hình:** So sánh sai số dự báo và phân tích tầm quan trọng của đặc trưng (**Feature Importance** qua Gain, Weight, Permutation Importance) để giải mã vai trò của từng bước trễ thời gian.
-* **Mở rộng nâng cao & Thực nghiệm lý thuyết:** Thực hiện kỹ thuật dự báo đa bước (**Multi-step Forecasting** $H = 24$ giờ: Direct vs Recursive), đọ sức giữa `XGBoost`, `Random Forest`, `Linear Regression`, khảo sát độ nhạy bậc trễ $p \in [1..336]$ và đối chiếu chuyên sâu với `ARIMA/SARIMA`.
+* **Mở rộng nâng cao & Thực nghiệm lý thuyết:** Thực hiện kỹ thuật dự báo đa bước (**Multi-step Forecasting** $H = 24$ giờ: Direct vs Recursive), đọ sức giữa `XGBoost`, `Random Forest`, `Linear Regression`, khảo sát độ nhạy bậc trễ $p \in [1..336]$, đối chiếu với `ARIMA/SARIMA` và **thực nghiệm khắc phục giới hạn ngoại suy vượt đỉnh lịch sử của mô hình cây**.
 
 ---
 
@@ -47,7 +47,7 @@ Lab3_TS/
 │       ├── aep_train.csv, aep_val.csv, aep_test.csv# Dữ liệu đã phân chia Train (75%) - Val (12.5%) - Test (12.5%)
 │       └── X_train.csv, y_train.csv ...            # Ma trận đặc trưng và nhãn mục tiêu tách rời
 ├── notebooks/
-│   └── main.ipynb                                  # Jupyter Notebook thực hành toàn diện (59 cells hoàn chỉnh)
+│   └── main.ipynb                                  # Jupyter Notebook thực hành toàn diện (66 cells hoàn chỉnh)
 ├── scripts/                                        # Module Python đóng gói chuẩn mực (Class, Models, Configs)
 │   ├── __init__.py                                 # Package init
 │   ├── config.py                                   # Quản lý siêu tham số, tỷ lệ chia, đường dẫn
@@ -80,8 +80,9 @@ Lab3_TS/
     ├── 03_xgboost_modeling_and_evaluation.md       # Tài liệu: Huấn luyện XGBoost, Đánh giá & Feature Importance (Bước 5-7)
     ├── 03_advanced_tuning_and_multistep.md         # Tài liệu: 4 Bài tập Nâng cao (Rolling, Multi-step, TimeSeriesSplit, RF)
     ├── 04_model_comparisons_and_insights.md        # Tài liệu: 3 Câu hỏi Thảo luận (LR, Độ nhạy bậc trễ p, ARIMA vs XGBoost)
+    ├── 05_tree_extrapolation_and_hybrid_solutions.md # Tài liệu Bổ sung: Khắc phục ngoại suy vượt đỉnh & Hybrid + Calendar
     ├── report.md                                   # Báo cáo tổng hợp kết quả thực nghiệm hoàn chỉnh
-    └── images/                                     # 15 biểu đồ trực quan hóa độ phân giải cao (01_.. -> 14_..)
+    └── images/                                     # 17 biểu đồ trực quan hóa độ phân giải cao (01_.. -> 16_..)
 ```
 
 ---
@@ -105,6 +106,9 @@ Lab3_TS/
   1. **XGBoost vs Linear Regression:** Phân tích hệ số $\beta_k$ và ưu thế học chuyển pha phi tuyến của XGBoost.
   2. **Tác động khi tăng số lag $p$ ($p \in [1..336]$):** Đường cong đánh đổi Độ chệch – Phương sai – Chi phí tính toán và ưu thế của `29 Selective Lags`.
   3. **Khi nào XGBoost phù hợp hơn ARIMA:** Đối chiếu 8 tiêu chí kỹ thuật và kiến trúc lai `Hybrid ARIMA + XGBoost`.
+
+* 🚀 **[05. Phần Bổ Sung: Khắc Phục Giới Hạn Ngoại Suy Cây Quyết Định & Tối Ưu Hybrid + Calendar (`05_tree_extrapolation_and_hybrid_solutions.md`)](05_tree_extrapolation_and_hybrid_solutions.md)**  
+  Chứng minh thực nghiệm 2 kịch bản vượt đỉnh lịch sử (`Trend +0.25 MW/h` & `Đỉnh cực đoan > 19.500 MW`), đối sánh `Differenced XGBoost`, `Detrended XGBoost` và `Hybrid Linear + XGBoost` (giảm $96\%$ sai số vùng vượt trần) kèm nâng cấp `Calendar Features` lập kỷ lục Test RMSE **$126,64\text{ MW}$**.
 
 * 📑 **[Báo Cáo Tổng Hợp Toàn Dự Án (`report.md`)](report.md)**  
   Báo cáo học thuật hoàn chỉnh tổng kết toàn bộ quy trình 7 bước cơ bản, 4 bài tập nâng cao, 3 câu hỏi nghiên cứu và bảng xếp hạng 10 mô hình/phương pháp.

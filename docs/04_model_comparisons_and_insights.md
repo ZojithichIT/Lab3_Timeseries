@@ -93,5 +93,5 @@ Khi cùng nhận đầu vào là vector $29$ biến trễ đa chu kỳ $\mathbf{
 ### 3.3. Khung quyết định chọn mô hình thực chiến (Decision Rule)
 * **Chọn `XGBoost` khi:** Dữ liệu có tần suất cao và quy mô lớn ($N > 5.000$ quan sát), tồn tại **đa chu kỳ lồng nhau** (ngày + tuần + năm), có **biến ngoại sinh** (thời tiết, sự kiện, khuyến mãi) và hành vi chuyển pha phi tuyến mạnh.
 * **Chọn `ARIMA / SARIMA` khi:** Chuỗi thời gian đơn biến ngắn ($N < 500$), tần suất thấp (tháng/quý/năm), có xu hướng tuyến tính rõ rệt và yêu cầu khoảng tin cậy tham số chặt chẽ.
-* **Giải pháp tối ưu cho chuỗi vừa có Trend dài hạn vừa có Đa chu kỳ phi tuyến:** Sử dụng kiến trúc **Hybrid ARIMA + XGBoost** (hoặc **Differenced XGBoost**): dùng sai phân / ARIMA để nắm bắt thành phần xu hướng tuyến tính, sau đó dùng XGBoost để học phần dư phi tuyến đa chu kỳ.
+* **Giải pháp tối ưu cho chuỗi vừa có Trend dài hạn vừa có Đa chu kỳ phi tuyến:** Sử dụng kiến trúc **Differenced XGBoost** hoặc **Hybrid Linear + XGBoost (+ Calendar Features)** — đã được cài đặt và kiểm chứng thực nghiệm đầy đủ tại [`05_tree_extrapolation_and_hybrid_solutions.md`](05_tree_extrapolation_and_hybrid_solutions.md), giúp vừa ngoại suy vượt đỉnh lịch sử với sai số ngoài trần giảm **$96\%$**, vừa hạ kỷ lục Test RMSE trên tập gốc AEP xuống **$126,64\text{ MW}$** ($\text{MAPE} = 0,65\%$).
 

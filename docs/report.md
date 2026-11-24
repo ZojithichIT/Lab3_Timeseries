@@ -14,7 +14,8 @@
 2. [Phần 1: Quy Trình 7 Bước Thực Hành Cơ Bản](#2-phần-1-quy-trình-7-bước-thực-hành-cơ-bản)
 3. [Phần 2: Kết Quả 4 Bài Tập Nâng Cao](#3-phần-2-kết-quả-4-bài-tập-nâng-cao)
 4. [Phần 3: Giải Đáp & Thực Nghiệm 3 Câu Hỏi Thảo Luận](#4-phần-3-giải-đáp--thực-nghiệm-3-câu-hỏi-thảo-luận)
-5. [Bảng Xếp Hạng Tổng Kết Toàn Bộ Các Mô Hình](#5-bảng-xếp-hạng-tổng-kết-toàn-bộ-các-mô-hình)
+5. [Phần 4 (Bổ Sung): Khắc Phục Giới Hạn Ngoại Suy Cây Quyết Định & Tối Ưu Hóa Hybrid + Calendar](#5-phần-4-bổ-sung-khắc-phục-giới-hạn-ngoại-suy-cây-quyết-định--tối-ưu-hóa-hybrid--calendar)
+6. [Bảng Xếp Hạng Tổng Kết Toàn Bộ Các Mô Hình](#6-bảng-xếp-hạng-tổng-kết-toàn-bộ-các-mô-hình)
 
 ---
 
@@ -134,20 +135,40 @@ Tuân thủ nguyên tắc nhân quả thời gian (**không xáo trộn / No Shu
 
 ---
 
-## 5. Bảng Xếp Hạng Tổng Kết Toàn Bộ Các Mô Hình
+## 5. Phần 4 (Bổ Sung): Khắc Phục Giới Hạn Ngoại Suy Cây Quyết Định & Tối Ưu Hóa Hybrid + Calendar
+
+Dựa trên phân tích từ [`presentation.html`](../../presentation.html), **mô hình cây (`Random Forest`, `XGBoost`) bị khóa cứng đầu ra trong đoạn $[\min(y_{\text{train}}), \max(y_{\text{train}})]$** và bị cắt phẳng ngọn khi chuỗi vượt đỉnh lịch sử. Để giải quyết triệt để và nâng cấp độ chính xác tổng thể, Lab 3 bổ sung $3$ thực nghiệm đối chứng với $3$ kiến trúc mới (`Differenced XGBoost`, `Detrended XGBoost`, `Hybrid Linear + XGBoost`) và bộ $6$ đặc trưng lịch (`Calendar Features`):
+
+![Khắc phục ngoại suy mô hình cây](images/15_tree_extrapolation_and_solutions.png)
+![Hybrid và Calendar Features Ablation](images/16_calendar_and_hybrid_ablation.png)
+
+1. **Stress-Test 1 — Xu hướng tăng trưởng ($+0{,}25\text{ MW/h}$, Test vượt trần $+6.140\text{ MW}$):** `XGBoost` chuẩn bị kẹt dưới trần cho **Out-of-Bounds RMSE = $3.894{,}87\text{ MW}$** (`Peak Bias = -3.655,94 MW`), trong khi **`Hybrid Linear + XGBoost`** đạt **$155{,}78\text{ MW}$** (giảm **$96{,}0\%$** sai số vùng vượt trần) và `Differenced XGBoost` đạt $159{,}95\text{ MW}$.
+2. **Stress-Test 2 — Đỉnh cực đoan chưa từng thấy trên AEP thật (`Train ≤ 19.500 MW`, `Test → 22.759 MW`):** `Detrended XGBoost` cũng bị kẹt trần (**$1.544{,}77\text{ MW}$**) vì đỉnh cực đoan không đến từ trend tuyến tính; chỉ **`Differenced XGBoost` ($229{,}06\text{ MW}$)** và **`Hybrid Linear + XGBoost` ($247{,}66\text{ MW}$)** dự báo chính xác tới đỉnh $22.759\text{ MW}$.
+3. **Cải thiện kỷ lục trên tập Test gốc AEP ($15.142$ giờ):** Kết hợp kiến trúc lai và $6$ đặc trưng lịch **`Hybrid Linear + XGBoost + Calendar (Refit)`** phá sâu kỷ lục trước đó ($163{,}25\text{ MW}$), hạ xuống chỉ còn **$\text{RMSE} = 126{,}64\text{ MW}$, $\text{MAE} = 95{,}44\text{ MW}$, $\text{MAPE} = 0{,}65\%$, $R^2 = 0{,}9972$**.
+
+*(Xem chi tiết chứng minh toán học và đầy đủ số liệu tại: [`05_tree_extrapolation_and_hybrid_solutions.md`](05_tree_extrapolation_and_hybrid_solutions.md))*
+
+---
+
+## 6. Bảng Xếp Hạng Tổng Kết Toàn Bộ Các Mô Hình
 
 ![Bảng xếp hạng tổng kết Lab 3](images/14_lab3_comprehensive_summary.png)
 
 | Hạng | Phương pháp / Mô hình | Tập đặc trưng | Test MAE (MW) | Test RMSE (MW) | Test MAPE (%) | Hệ số $R^2$ |
 |:---:|---|---|:---:|:---:|:---:|:---:|
-| **🥇 1** | **`XGBoost Tuned (TimeSeriesSplit + Refit)`** | **29 Selective Lags** | **$123,28$** | **$163,25$** | **$0,84\%$** | **$0,9953$** |
-| **🥈 2** | **`XGBoost Baseline (Bước 5)`** | **29 Selective Lags** | $125,32$ | $165,39$ | $0,86\%$ | $0,9951$ |
-| **🥉 3** | **`XGBoost Enhanced (+ 6 Rolling Features)`** | **29 Lags + 6 Rolling** | $125,01$ | $165,50$ | $0,85\%$ | $0,9951$ |
-| **4** | `Linear Regression (AR Tuyến tính)` | 29 Selective Lags | $128,33$ | $168,73$ | $0,88\%$ | $0,9949$ |
-| **5** | `XGBoost Dense (p = 336 Lags liên tục)` | 336 Dense Lags | $134,35$ | $175,06$ | $0,92\%$ | $0,9945$ |
-| **6** | `Random Forest Regressor (Bagging 200 cây)` | 29 Selective Lags | $139,32$ | $188,13$ | $0,95\%$ | $0,9937$ |
-| **7** | `XGBoost Dense (p = 24 Lags ngày)` | 24 Dense Lags | $140,43$ | $188,86$ | $0,96\%$ | $0,9937$ |
-| **8** | `Persistence Naive Baseline` ($\hat{y}_t = y_{t-1}$) | 1 Lag (`lag_1`) | $399,30$ | $512,41$ | $2,74\%$ | $0,9534$ |
-| **9** | `Seasonal Naive 24h Baseline` ($\hat{y}_t = y_{t-24}$) | 1 Lag (`lag_24`) | $945,01$ | $1.235,36$ | $6,37\%$ | $0,7293$ |
-| **10** | `Weekly Naive 168h Baseline` ($\hat{y}_t = y_{t-168}$) | 1 Lag (`lag_168`) | $1.489,92$ | $1.953,74$ | $9,89\%$ | $0,3229$ |
+| **🏆 1** | **`Hybrid Linear + XGBoost + Calendar (Refit)` *(Bổ sung)*** | **29 Lags + 6 Calendar** | **$95{,}44$** | **$126{,}64$** | **$0{,}65\%$** | **$0{,}9972$** |
+| **2** | `Hybrid Linear + XGBoost + Calendar` *(Bổ sung)* | 29 Lags + 6 Calendar | $96{,}79$ | $128{,}41$ | $0{,}66\%$ | $0{,}9971$ |
+| **3** | `Hybrid Linear + XGBoost (29 Lags)` *(Bổ sung)* | 29 Selective Lags | $106{,}01$ | $140{,}58$ | $0{,}72\%$ | $0{,}9965$ |
+| **4** | `Differenced XGBoost (Delta y)` *(Bổ sung)* | 29 Selective Lags | $106{,}27$ | $143{,}02$ | $0{,}72\%$ | $0{,}9964$ |
+| **5** | `XGBoost + Calendar (35 Features)` *(Bổ sung)* | 29 Lags + 6 Calendar | $114{,}04$ | $150{,}73$ | $0{,}78\%$ | $0{,}9960$ |
+| **6** | `XGBoost Tuned (TimeSeriesSplit + Refit)` | 29 Selective Lags | $123{,}28$ | $163{,}25$ | $0{,}84\%$ | $0{,}9953$ |
+| **7** | `XGBoost Baseline (Bước 5)` | 29 Selective Lags | $125{,}32$ | $165{,}39$ | $0{,}86\%$ | $0{,}9951$ |
+| **8** | `XGBoost Enhanced (+ 6 Rolling Features)` | 29 Lags + 6 Rolling | $125{,}01$ | $165{,}50$ | $0{,}85\%$ | $0{,}9951$ |
+| **9** | `Linear Regression (AR Tuyến tính)` | 29 Selective Lags | $128{,}33$ | $168{,}73$ | $0{,}88\%$ | $0{,}9949$ |
+| **10** | `XGBoost Dense (p = 336 Lags liên tục)` | 336 Dense Lags | $134{,}35$ | $175{,}06$ | $0{,}92\%$ | $0{,}9945$ |
+| **11** | `Random Forest Regressor (Bagging 200 cây)` | 29 Selective Lags | $139{,}32$ | $188{,}13$ | $0{,}95\%$ | $0{,}9937$ |
+| **12** | `XGBoost Dense (p = 24 Lags ngày)` | 24 Dense Lags | $140{,}43$ | $188{,}86$ | $0{,}96\%$ | $0{,}9937$ |
+| **13** | `Persistence Naive Baseline` ($\hat{y}_t = y_{t-1}$) | 1 Lag (`lag_1`) | $399{,}30$ | $512{,}41$ | $2{,}74\%$ | $0{,}9534$ |
+| **14** | `Seasonal Naive 24h Baseline` ($\hat{y}_t = y_{t-24}$) | 1 Lag (`lag_24`) | $945{,}01$ | $1.235{,}36$ | $6{,}37\%$ | $0{,}7293$ |
+| **15** | `Weekly Naive 168h Baseline` ($\hat{y}_t = y_{t-168}$) | 1 Lag (`lag_168`) | $1.489{,}92$ | $1.953{,}74$ | $9{,}89\%$ | $0{,}3229$ |
 
