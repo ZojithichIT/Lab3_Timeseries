@@ -74,10 +74,12 @@ def build_feature_splits_cache(series: pd.Series) -> Dict[str, DatasetSplits]:
     df_roll = TimeSeriesFeatureBuilder.create_lags_and_rolling_features(
         series, lags=Config.SELECTIVE_LAGS, windows=Config.ROLLING_WINDOWS
     )
+    df_cal = TimeSeriesFeatureBuilder.create_lags_and_calendar_features(series, lags=Config.SELECTIVE_LAGS)
     return {
         "selective_29": TimeSeriesFeatureBuilder.time_based_split(df_sel, ratios=Config.SPLIT_RATIOS, export_dir=None),
         "dense_24": TimeSeriesFeatureBuilder.time_based_split(df_dense24, ratios=Config.SPLIT_RATIOS, export_dir=None),
         "rolling_35": TimeSeriesFeatureBuilder.time_based_split(df_roll, ratios=Config.SPLIT_RATIOS, export_dir=None),
+        "calendar_35": TimeSeriesFeatureBuilder.time_based_split(df_cal, ratios=Config.SPLIT_RATIOS, export_dir=None),
     }
 
 
@@ -86,6 +88,8 @@ def match_splits_for_features(
     splits_cache: Dict[str, DatasetSplits],
 ) -> DatasetSplits:
     """Select the DatasetSplits object matching a saved model's feature_names_."""
+    if any(col in Config.CALENDAR_COLS for col in feature_names):
+        return splits_cache["calendar_35"]
     if any(col.startswith("rolling_") for col in feature_names):
         return splits_cache["rolling_35"]
     dense_24_cols = [f"lag_{i}" for i in range(1, Config.DEFAULT_LAGS + 1)]
@@ -129,8 +133,12 @@ def resolve_selected_models(model_arg: str) -> List[Tuple[str, Path]]:
     return [(display_name, candidate)]
 
 
-def build_step_features(history: List[float], feature_names: List[str]) -> pd.DataFrame:
-    """Compute one step of lag and rolling features dynamically from history."""
+def build_step_features(
+    history: List[float],
+    feature_names: List[str],
+    next_ts: Optional[pd.Timestamp] = None,
+) -> pd.DataFrame:
+    """Compute one step of lag, rolling, and calendar features dynamically from history."""
     row: Dict[str, float] = {}
     for col in feature_names:
         if col.startswith("lag_"):
@@ -142,6 +150,21 @@ def build_step_features(history: List[float], feature_names: List[str]) -> pd.Da
         elif col.startswith("rolling_std_"):
             w = int(col.split("_")[-1])
             row[col] = float(np.std(history[-w:], ddof=1))
+        elif col in Config.CALENDAR_COLS:
+            if next_ts is None:
+                raise ValueError("Timestamp required to compute calendar features.")
+            if col == "hour":
+                row[col] = float(next_ts.hour)
+            elif col == "dayofweek":
+                row[col] = float(next_ts.dayofweek)
+            elif col == "month":
+                row[col] = float(next_ts.month)
+            elif col == "is_weekend":
+                row[col] = float(1 if next_ts.dayofweek >= 5 else 0)
+            elif col == "hour_sin":
+                row[col] = float(np.sin(2.0 * np.pi * next_ts.hour / 24.0))
+            elif col == "hour_cos":
+                row[col] = float(np.cos(2.0 * np.pi * next_ts.hour / 24.0))
         else:
             raise ValueError(f"Unsupported feature column during recursive inference: {col}")
     return pd.DataFrame([row], columns=feature_names)
@@ -159,9 +182,9 @@ def forecast_future_recursive(
 
     records: List[Dict[str, Any]] = []
     for step in range(1, horizon + 1):
-        X_step = build_step_features(history, feature_names)
-        y_hat = float(forecaster.predict(X_step)[0])
         next_ts = last_ts + pd.Timedelta(hours=step)
+        X_step = build_step_features(history, feature_names, next_ts=next_ts)
+        y_hat = float(forecaster.predict(X_step)[0])
         records.append({
             "Datetime": str(next_ts),
             "horizon_step": step,
